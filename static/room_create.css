@@ -1,0 +1,316 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)),
+        #f4efe3;
+    color: #2f2a24;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* ヘッダー */
+.museum-header {
+    background: linear-gradient(135deg, #2d211c, #4a382d);
+    color: #fffaf0;
+    padding: 40px 24px;
+    border-bottom: 8px solid #c9a646;
+}
+
+.header-inner {
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.museum-label {
+    display: inline-block;
+    margin: 0 0 12px 0;
+    padding: 6px 14px;
+    border: 1px solid #c9a646;
+    color: #e8d49a;
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.museum-header h1 {
+    margin: 0;
+    font-size: 36px;
+    letter-spacing: 0.08em;
+}
+
+.header-text {
+    margin: 12px 0 24px 0;
+    line-height: 1.8;
+    color: #efe6d1;
+}
+
+.header-nav {
+    display: flex;
+    gap: 12px;
+}
+
+.nav-button {
+    display: inline-block;
+    padding: 10px 18px;
+    background-color: #c9a646;
+    color: #2f2a24;
+    border-radius: 999px;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.nav-button:hover {
+    background-color: #e0bf5b;
+    transform: translateY(-2px);
+}
+
+/* メイン */
+.page-main {
+    max-width: 960px;
+    margin: 40px auto;
+    padding: 0 24px;
+}
+
+/* 入力カード */
+.create-room-card {
+    background-color: #fffaf0;
+    border: 1px solid #d6c6a3;
+    border-radius: 18px;
+    padding: 36px;
+    box-shadow: 0 12px 30px rgba(47, 42, 36, 0.18);
+    position: relative;
+}
+
+.create-room-card::before {
+    content: "";
+    position: absolute;
+    inset: 14px;
+    border: 2px solid #c9a646;
+    border-radius: 12px;
+    pointer-events: none;
+}
+
+.card-title-area {
+    position: relative;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #d6c6a3;
+}
+
+.card-label {
+    margin: 0 0 8px 0;
+    color: #9b7a22;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.card-title-area h2 {
+    margin: 0 0 10px 0;
+    font-size: 28px;
+}
+
+.card-title-area p {
+    margin: 0;
+    line-height: 1.8;
+    color: #6a5c4d;
+}
+
+/* フォーム */
+.room-form {
+    position: relative;
+}
+
+.form-item {
+    margin-bottom: 24px;
+}
+
+.form-item label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #3d3027;
+}
+
+.form-item input,
+.form-item textarea {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid #cdbb98;
+    border-radius: 10px;
+    background-color: #fffdf7;
+    color: #2f2a24;
+    font-size: 16px;
+}
+
+.form-item textarea {
+    min-height: 130px;
+    resize: vertical;
+}
+
+.form-item input:focus,
+.form-item textarea:focus {
+    outline: none;
+    border-color: #c9a646;
+    box-shadow: 0 0 0 3px rgba(201, 166, 70, 0.25);
+}
+
+/* 関心度 */
+/* 関心度スライダー */
+.form-item input.interest-range {
+    width: 100%;
+    height: 10px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: #ddd0b8;
+    cursor: pointer;
+}
+
+/* Chrome / Edge */
+.form-item input.interest-range::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #3b2f2f;
+    border: 3px solid #c9a646;
+    cursor: pointer;
+}
+
+/* Firefox */
+.form-item input.interest-range::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #3b2f2f;
+    border: 3px solid #c9a646;
+    cursor: pointer;
+}
+
+#interest-value {
+    color: #9b7a22;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    color: #7a6a58;
+    font-size: 14px;
+}
+
+/* ボタン */
+.button-area {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 32px;
+}
+
+.back-button,
+.submit-button {
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.back-button {
+    border: 1px solid #8a7965;
+    color: #4a382d;
+    background-color: transparent;
+}
+
+.submit-button {
+    border: none;
+    background-color: #3b2f2f;
+    color: #fffaf0;
+}
+
+.back-button:hover {
+    background-color: #eee3cf;
+}
+
+.submit-button:hover {
+    background-color: #5a4540;
+}
+
+/* スマホ対応 */
+@media (max-width: 600px) {
+    .museum-header {
+        padding: 28px 18px;
+    }
+
+    .museum-header h1 {
+        font-size: 28px;
+    }
+
+    .page-main {
+        margin: 24px auto;
+        padding: 0 16px;
+    }
+
+    .create-room-card {
+        padding: 26px 20px;
+    }
+
+    .create-room-card::before {
+        inset: 9px;
+    }
+
+    .card-title-area h2 {
+        font-size: 24px;
+    }
+
+    .button-area {
+        flex-direction: column;
+    }
+
+    .back-button,
+    .submit-button {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Chrome / Edge */
+    .interest-range::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #3b2f2f;
+        border: 3px solid #c9a646;
+    }
+
+    /* Firefox */
+    .interest-range::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #3b2f2f;
+        border: 3px solid #c9a646;
+    }
+
+    #interest-value {
+        color: #9b7a22;
+        font-weight: bold;
+        margin-left: 8px;
+    }
+}

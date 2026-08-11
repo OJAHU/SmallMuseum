@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ room.name }} - 作品一覧</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='works.css') }}"
+    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='topbar.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='sidebar.css') }}">
+</head>
+
+<body>
+
+
+{% include 'topbar.html' %}
+{% include 'sidebar.html' %}
+
+<header class="page-header">
+    <div class="header-content">
+
+        <p class="sub-title">Exhibition Room</p>
+
+        <h1>{{ room.name }}</h1>
+
+        {% if room.short_description %}
+            <p class="room-description">
+                {{ room.short_description }}
+            </p>
+        {% endif %}
+
+        {% if room.tags %}
+            <div class="room-tags">
+                {% for tag in room.tags.split(",") %}
+                    {% if tag.strip() %}
+                        <span class="room-tag">
+                            {{ tag.strip() }}
+                        </span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="header-info">
+            <span>
+                作品数：{{ works|length }}
+            </span>
+
+            <span>
+                関心度：{{ room.interest }}%
+            </span>
+        </div>
+
+        <nav class="header-nav">
+
+            <a href="{{ url_for('room_list') }}">
+                展示室一覧へ戻る
+            </a>
+
+            <a href="{{ url_for('search_page') }}">
+                検索する
+            </a>
+
+        <a
+            class="create-button"
+            href="{{ url_for('work_create', room_id=room.id) }}"
+        >
+            新しい作品を作る
+        </a>
+
+        </nav>
+
+    </div>
+</header>
+
+
+<main class="page-main">
+
+    {% if works %}
+
+        <section class="works-section">
+
+            <div class="section-heading">
+
+                <p>Exhibits</p>
+
+                <h2>展示作品</h2>
+
+                <span>
+                    展示されている作品を選択してください。
+                </span>
+
+            </div>
+
+
+            <div class="works-grid">
+
+                {% for work in works %}
+
+                    <article class="work-card">
+
+                        <div class="work-inner">
+
+                            <p class="work-number">
+                                Exhibit {{ loop.index }}
+                            </p>
+
+                            <h3>
+                                {{ work.title }}
+                            </h3>
+
+                            {% if work.tags %}
+
+                                <div class="work-tags">
+
+                                    {% for tag in work.tags.split(",") %}
+
+                                        {% if tag.strip() %}
+
+                                            <span class="tag-block">
+                                                {{ tag.strip() }}
+                                            </span>
+
+                                        {% endif %}
+
+                                    {% endfor %}
+
+                                </div>
+
+                            {% endif %}
+
+
+                            <div class="status-area">
+
+                                <div class="status-item">
+
+                                    <div class="status-head">
+                                        <span>進捗度</span>
+                                        <strong>
+                                            {{ work.progress }}%
+                                        </strong>
+                                    </div>
+
+                                    <div class="status-bar">
+
+                                        <div
+                                            class="status-fill"
+                                            style="width: {{ work.progress }}%;"
+                                        ></div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="status-item">
+
+                                    <div class="status-head">
+                                        <span>関心度</span>
+                                        <strong>
+                                            {{ work.interest }}%
+                                        </strong>
+                                    </div>
+
+                                    <div class="status-bar">
+
+                                        <div
+                                            class="status-fill interest-fill"
+                                            style="width: {{ work.interest }}%;"
+                                        ></div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="work-meta">
+
+                                {% if work.created_at %}
+                                    <p>
+                                        作成日
+                                        <span>{{ work.created_at }}</span>
+                                    </p>
+                                {% endif %}
+
+                                {% if work.updated_at %}
+                                    <p>
+                                        更新日
+                                        <span>{{ work.updated_at }}</span>
+                                    </p>
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="work-actions">
+
+                                <a
+                                    class="preview-button"
+                                    href="{{ url_for(
+                                        'work_detail',
+                                        room_id=room.id,
+                                        work_id=work.id
+                                    ) }}"
+                                >
+                                    作品を見る
+                                </a>
+
+                                <form
+                                    action="{{ url_for(
+                                        'work_delete',
+                                        room_id=room.id,
+                                        work_id=work.id
+                                    ) }}"
+                                    method="post"
+                                    onsubmit="return confirm('「{{ work.title }}」を撤去しますか？');"
+                                >
+                                    <button
+                                        class="delete-button"
+                                        type="submit"
+                                    >
+                                        撤去
+                                    </button>
+                                </form>
+
+                            </div>
+
+                        </div>
+
+                    </article>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+
+    {% else %}
+
+        <section class="empty-section">
+
+            <div class="empty-card">
+
+                <p class="sub-title">
+                    No Exhibits
+                </p>
+
+                <h2>
+                    作品がありません
+                </h2>
+
+                <p>
+                    この展示室にはまだ作品が展示されていません。
+                </p>
+
+                <a
+                    class="create-button"
+                    href="{{ url_for('work_create', room_id=room.id) }}"
+                >
+                    新しい作品を作る
+                </a>
+
+            </div>
+
+        </section>
+
+    {% endif %}
+
+</main>
+
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>展示室増設</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='room_create.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='topbar.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='sidebar.css') }}">
+</head>
+    <body>
+        
+{% include 'topbar.html' %}
+{% include 'sidebar.html' %}
+
+<header class="museum-header">
+            <div class="header-inner">
+                <p class="museum-label">Small Museum</p>
+                <h1>展示室増設</h1>
+                <p class="header-text">
+                    テーマやタグを設定して、作品を整理しやすい展示室を作ります。
+                </p>
+                
+                <nav class="header-nav">
+                    <a class="nav-button" href="{{ url_for('room_list') }}">展示室一覧へ戻る</a>
+                    <a class="nav-button" href="{{ url_for('search_page') }}">検索する</a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="page-main">
+            <section class="create-room-card">
+                <div class="card-title-area">
+                    <p class="card-label">New Exhibition Room</p>
+                    <h2>新しい展示室</h2>
+                    <p>
+                        展示室の名前や説明を入力してください。
+                        作品のテーマごとに部屋を分けると管理しやすくなります。
+                    </p>
+                </div>
+
+                {% if mode == "edit" %}
+                    <form class="room-form" action="{{ url_for('room_edit', room_id=room.id) }}" method="post">
+                {% else %}
+                    <form class="room-form" action="{{ url_for('room_create') }}" method="post">
+                {% endif %}
+                    <div class="form-item">
+                        <label for="name">展示室名</label>
+                        <input id="name" type="text" name="name" value="{{ room.name if room else '' }}" placeholder="例：管理" required>
+                    </div>
+
+                    <div class="form-item">
+                        <label for="tags">タグ・キーワード</label>
+                        <input id="tags" type="text" name="tags" value="{{ room.tags if room else '' }}" placeholder="例：プログラム,AI,Web">
+                    </div>
+
+                    <div class="form-item">
+                        <label for="short-description">短い説明</label>
+                        <input id="short-description" type="text" name="short_description" value="{{ room.short_description if room else '' }}" placeholder="例：身の回りの生活を管理" required>
+                    </div>
+
+                    <div class="form-item">
+                        <label for="description">詳しい説明</label>
+                        <textarea id="description" name="description" placeholder="例：自分の作業記録やタスクなどを管理するプログラムを展示しました" >{{ room.description if room else '' }}</textarea>
+                    </div>
+
+                    <div class="form-item">
+                        <label for="interest">
+                            関心度：
+                            <span id="interest-value">{{ room.interest if room else 50 }}%</span>
+                        </label>
+                        
+                        <input id="interest"  class="interest-range" type="range" name="interest" min="0" max="100" value="{{ room.interest if room else 50 }}">
+
+                        <div class="range-labels">
+                            <span>0%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+
+                    <script>
+                        const interestInput = document.getElementById("interest");
+                        const interestValue = document.getElementById("interest-value");
+
+                        function updateInterest() {
+                            const value = interestInput.value;
+                            interestValue.textContent = value + "%";
+
+                            interestInput.style.background =
+                                `linear-gradient(to right, #c9a646 0%, #c9a646 ${value}%, #ddd0b8 ${value}%, #ddd0b8 100%)`;
+                        }
+
+                        interestInput.addEventListener("input", updateInterest);
+                        updateInterest();
+                    </script>
+                    
+                    <div class="button-area">
+                        <a class="back-button" href="{{ url_for('room_list') }}">戻る</a>
+                        <button class="submit-button" type="submit">
+                            {% if mode == "edit" %}
+                                改修する
+                            {% else %}
+                                増設する
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </body>
+</html>

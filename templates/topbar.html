@@ -1,0 +1,63 @@
+<nav class="site-topbar" aria-label="共通操作">
+    <div class="site-topbar__inner">
+        <a class="site-topbar__brand" href="{{ url_for('room_list') }}">
+            <span class="site-topbar__brand-mark" aria-hidden="true">◆</span>
+            <span class="site-topbar__brand-text">
+                <strong>小さな展覧会</strong>
+                <small>Small Museum</small>
+            </span>
+        </a>
+
+        <div class="site-topbar__actions">
+            <a
+                class="site-topbar__button"
+                href="{{ url_for('room_list') }}"
+                title="展示室一覧へ戻る"
+            >
+                <span class="site-topbar__icon" aria-hidden="true">⌂</span>
+                <span class="site-topbar__label">ホーム</span>
+            </a>
+
+            <button
+                class="site-topbar__button"
+                type="button"
+                onclick="goBackFromTopbar()"
+                title="ひとつ前のページへ戻る"
+            >
+                <span class="site-topbar__icon" aria-hidden="true">←</span>
+                <span class="site-topbar__label">戻る</span>
+            </button>
+
+            <a
+                class="site-topbar__button"
+                href="{{ url_for('search_page') }}"
+                title="展示室・作品を検索"
+            >
+                <span class="site-topbar__icon" aria-hidden="true">⌕</span>
+                <span class="site-topbar__label">検索</span>
+            </a>
+
+            <form class="site-topbar__logout-form" action="/logout" method="post">
+                <button
+                    class="site-topbar__button site-topbar__button--logout"
+                    type="submit"
+                    title="ログアウト"
+                >
+                    <span class="site-topbar__icon" aria-hidden="true">↪</span>
+                    <span class="site-topbar__label">ログアウト</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<script>
+function goBackFromTopbar() {
+    if (window.history.length > 1) {
+        window.history.back();
+        return;
+    }
+
+    window.location.href = "{{ url_for('room_list') }}";
+}
+</script>

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>{{ work.title }}</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='work_detail.css') }}"
+    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='topbar.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='sidebar.css') }}">
+</head>
+
+<body>
+
+
+{% include 'topbar.html' %}
+{% include 'sidebar.html' %}
+
+<header class="museum-header">
+
+    <div class="header-inner">
+
+        <p class="museum-label">
+            Exhibit
+        </p>
+
+        <h1>
+            {{ work.title }}
+        </h1>
+
+        <p class="room-name">
+            展示室：{{ work.room_name }}
+        </p>
+
+
+        {% if work.tags %}
+
+            <div class="work-tags">
+
+                {% for tag in work.tags.split(",") %}
+
+                    {% if tag.strip() %}
+
+                        <span class="tag-block">
+                            {{ tag.strip() }}
+                        </span>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+
+        <div class="work-status">
+
+            <span>
+                進捗度：{{ work.progress }}%
+            </span>
+
+            <span>
+                関心度：{{ work.interest }}%
+            </span>
+
+        </div>
+
+
+        <nav class="header-nav">
+
+            <a
+                href="{{ url_for(
+                    'room_detail',
+                    room_id=work.room_id
+                ) }}"
+            >
+                作品一覧へ戻る
+            </a>
+
+            <a href="{{ url_for('search_page') }}">
+                検索する
+            </a>
+
+            <a
+                href="{{ url_for(
+                    'work_edit',
+                    room_id=work.room_id,
+                    work_id=work.id
+                ) }}"
+            >
+                作品を編集する
+            </a>
+
+        </nav>
+
+    </div>
+
+</header>
+
+
+<main class="page-main">
+
+    <section class="report-section">
+
+        <div class="section-heading">
+
+            <p>Work Report</p>
+
+            <h2>
+                作品報告書
+            </h2>
+
+        </div>
+
+
+        <div class="document-workspace">
+
+            <div
+                id="report-pages"
+                class="report-pages"
+            ></div>
+
+        </div>
+
+    </section>
+
+
+    {% if work.reference_sites %}
+
+        <section class="references">
+
+            <p class="reference-label">
+                References
+            </p>
+
+            <h2>
+                参考サイトなど
+            </h2>
+
+            <p class="reference-text">
+                {{ work.reference_sites }}
+            </p>
+
+        </section>
+
+    {% endif %}
+
+
+    <div class="work-meta">
+
+        <p>
+            <span>作成日</span>
+            {{ work.created_at }}
+        </p>
+
+        <p>
+            <span>更新日</span>
+            {{ work.updated_at }}
+        </p>
+
+    </div>
+
+</main>
+
+
+<script>
+
+const reportData =
+    {{ report | tojson }};
+
+const pagesContainer =
+    document.getElementById("report-pages");
+
+
+const PAGE_WIDTH = 794;
+const PAGE_HEIGHT = 1123;
+
+
+/* =========================
+   HTMLを軽く安全化
+========================= */
+
+function sanitizeHtml(html) {
+
+    const template =
+        document.createElement("template");
+
+    template.innerHTML = html || "";
+
+
+    template.content
+        .querySelectorAll(
+            "script, iframe, object, embed, style"
+        )
+        .forEach(element => {
+            element.remove();
+        });
+
+
+    template.content
+        .querySelectorAll("*")
+        .forEach(element => {
+
+            [...element.attributes]
+                .forEach(attribute => {
+
+                    const name =
+                        attribute.name.toLowerCase();
+
+                    if (name.startsWith("on")) {
+                        element.removeAttribute(
+                            attribute.name
+                        );
+                    }
+
+                });
+
+        });
+
+
+    return template.innerHTML;
+}
+
+
+/* =========================
+   テキスト
+========================= */
+
+function createTextElement(data) {
+
+    const content =
+        document.createElement("div");
+
+    content.className =
+        "report-text";
+
+
+    if (data.html) {
+
+        content.innerHTML =
+            sanitizeHtml(data.html);
+
+    } else {
+
+        content.textContent =
+            data.text || "";
+
+    }
+
+
+    if (data.fontSize) {
+        content.style.fontSize =
+            data.fontSize;
+    }
+
+    if (data.fontFamily) {
+        content.style.fontFamily =
+            data.fontFamily;
+    }
+
+    if (data.color) {
+        content.style.color =
+            data.color;
+    }
+
+    if (data.fontWeight) {
+        content.style.fontWeight =
+            data.fontWeight;
+    }
+
+    if (data.textDecoration) {
+        content.style.textDecoration =
+            data.textDecoration;
+    }
+
+    if (data.textAlign) {
+        content.style.textAlign =
+            data.textAlign;
+    }
+
+
+    return content;
+}
+
+
+/* =========================
+   各要素を復元
+========================= */
+
+function renderElement(data, pageElement) {
+
+    const element =
+        document.createElement("div");
+
+    element.className =
+        "report-element";
+
+
+    element.style.left =
+        (data.x || 0) + "px";
+
+    element.style.top =
+        (data.y || 0) + "px";
+
+    element.style.width =
+        (data.width || 100) + "px";
+
+    element.style.height =
+        (data.height || 40) + "px";
+
+    element.style.zIndex =
+        data.z || 1;
+
+
+    /* テキスト・見出し */
+
+    if (
+        data.type === "text" ||
+        data.type === "heading"
+    ) {
+
+        element.appendChild(
+            createTextElement(data)
+        );
+
+    }
+
+
+    /* 画像 */
+
+    else if (data.type === "image") {
+
+        const image =
+            document.createElement("img");
+
+        image.src =
+            data.src || "";
+
+        image.alt = "";
+
+        element.classList.add(
+            "report-image"
+        );
+
+        element.appendChild(image);
+
+    }
+
+
+    /* 図形 */
+
+    else if (data.type === "shape") {
+
+        const shape =
+            document.createElement("div");
+
+        const kind =
+            data.shapeKind ||
+            "rectangle";
+
+        shape.className =
+            "shape-content shape-" + kind;
+
+        shape.style.background =
+            data.background ||
+            "#d6bc74";
+
+        element.appendChild(shape);
+
+    }
+
+
+    /* URL */
+
+    else if (data.type === "link") {
+
+        const link =
+            document.createElement("a");
+
+        link.href =
+            data.url || "#";
+
+        link.target =
+            "_blank";
+
+        link.rel =
+            "noopener noreferrer";
+
+        link.className =
+            "report-link";
+
+
+        if (data.html) {
+
+            link.innerHTML =
+                sanitizeHtml(
+                    data.html
+                );
+
+        } else {
+
+            link.textContent =
+                data.text ||
+                data.url ||
+                "リンク";
+
+        }
+
+        element.appendChild(link);
+
+    }
+
+
+    pageElement.appendChild(element);
+}
+
+
+/* =========================
+   報告書を表示
+========================= */
+
+function normalizeReportPages(report) {
+
+    if (
+        report &&
+        Array.isArray(report.pages) &&
+        report.pages.length > 0
+    ) {
+
+        return report.pages.map(pageData => ({
+            elements: Array.isArray(pageData.elements)
+                ? pageData.elements
+                : []
+        }));
+
+    }
+
+    /* 旧形式の1ページ作品との互換性 */
+    return [{
+        elements:
+            report && Array.isArray(report.elements)
+                ? report.elements
+                : []
+    }];
+
+}
+
+function createReportPage(pageData, index) {
+
+    const stage =
+        document.createElement("div");
+
+    stage.className =
+        "report-stage";
+
+    stage.dataset.pageLabel =
+        `${index + 1}ページ`;
+
+
+    const pageElement =
+        document.createElement("div");
+
+    pageElement.className =
+        "report-page";
+
+    stage.appendChild(
+        pageElement
+    );
+
+    pagesContainer.appendChild(
+        stage
+    );
+
+
+    (pageData.elements || [])
+        .forEach(data => {
+            renderElement(
+                data,
+                pageElement
+            );
+        });
+
+}
+
+normalizeReportPages(reportData)
+    .forEach(createReportPage);
+
+
+/* =========================
+   スマホ等では縮小
+========================= */
+
+function updateScale() {
+
+    const container =
+        document.querySelector(
+            ".document-workspace"
+        );
+
+    const style =
+        getComputedStyle(container);
+
+    const padding =
+        parseFloat(style.paddingLeft) +
+        parseFloat(style.paddingRight);
+
+    const available =
+        Math.max(
+            1,
+            container.clientWidth -
+            padding
+        );
+
+    const scale =
+        Math.min(
+            1,
+            available / PAGE_WIDTH
+        );
+
+
+    pagesContainer
+        .querySelectorAll(
+            ".report-stage"
+        )
+        .forEach(stage => {
+
+            const pageElement =
+                stage.querySelector(
+                    ".report-page"
+                );
+
+            pageElement.style.transform =
+                `scale(${scale})`;
+
+            stage.style.width =
+                PAGE_WIDTH * scale +
+                "px";
+
+            stage.style.height =
+                PAGE_HEIGHT * scale +
+                "px";
+
+        });
+
+}
+
+
+window.addEventListener(
+    "resize",
+    updateScale
+);
+
+updateScale();
+
+</script>
+
+</body>
+
+</html>

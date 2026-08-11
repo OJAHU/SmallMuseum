@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>検索 - 小さな展覧会</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='search.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='topbar.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='sidebar.css') }}">
+</head>
+<body>
+
+{% include 'topbar.html' %}
+{% include 'sidebar.html' %}
+
+<header class="page-header">
+    <div class="header-content">
+        <p class="sub-title">Museum Search</p>
+        <h1>展示物を検索</h1>
+        <p class="header-description">
+            展示室や作品を、名前・タグ・日付・進捗度・関心度から探せます。
+        </p>
+
+        <nav class="header-nav">
+            <a href="{{ url_for('room_list') }}">展示室一覧へ</a>
+        </nav>
+    </div>
+</header>
+
+<main class="page-main">
+    <section class="search-panel">
+        <div class="section-heading">
+            <p>Search Conditions</p>
+            <h2>検索条件</h2>
+            <span>条件を組み合わせて絞り込めます。</span>
+        </div>
+
+        <form class="search-form" action="{{ url_for('search_page') }}" method="get">
+            <input type="hidden" name="submitted" value="1">
+
+            <div class="form-grid">
+                <div class="form-item">
+                    <label for="target">検索対象</label>
+                    <select id="target" name="target">
+                        <option value="all" {% if filters.target == 'all' %}selected{% endif %}>展示室・作品</option>
+                        <option value="rooms" {% if filters.target == 'rooms' %}selected{% endif %}>展示室のみ</option>
+                        <option value="works" {% if filters.target == 'works' %}selected{% endif %}>作品のみ</option>
+                    </select>
+                </div>
+
+                <div class="form-item full-width">
+                    <label for="keyword">タグ・キーワード</label>
+                    <input
+                        id="keyword"
+                        type="text"
+                        name="keyword"
+                        value="{{ filters.keyword }}"
+                        placeholder="例：Python, AI, Web, ファイル管理"
+                    >
+                    <p class="help-text">
+                        展示室名・説明・タグ、作品名・タグなどを対象に検索します。
+                    </p>
+                </div>
+
+                <div class="form-item">
+                    <label for="room-name">展示室名</label>
+                    <input
+                        id="room-name"
+                        type="text"
+                        name="room_name"
+                        value="{{ filters.room_name }}"
+                        placeholder="例：管理"
+                    >
+                </div>
+
+                <div class="form-item">
+                    <label for="work-name">作品名</label>
+                    <input
+                        id="work-name"
+                        type="text"
+                        name="work_name"
+                        value="{{ filters.work_name }}"
+                        placeholder="例：ファイル整理アプリ"
+                    >
+                </div>
+            </div>
+
+            <div class="condition-group">
+                <div class="condition-title">
+                    <p>Date</p>
+                    <h3>日付</h3>
+                </div>
+
+                <div class="range-grid">
+                    <div class="range-block">
+                        <span class="range-label">作成日</span>
+                        <div class="range-inputs">
+                            <label>
+                                <span>開始</span>
+                                <input type="date" name="created_from" value="{{ filters.created_from }}">
+                            </label>
+                            <span class="range-separator">～</span>
+                            <label>
+                                <span>終了</span>
+                                <input type="date" name="created_to" value="{{ filters.created_to }}">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="range-block">
+                        <span class="range-label">更新日</span>
+                        <div class="range-inputs">
+                            <label>
+                                <span>開始</span>
+                                <input type="date" name="updated_from" value="{{ filters.updated_from }}">
+                            </label>
+                            <span class="range-separator">～</span>
+                            <label>
+                                <span>終了</span>
+                                <input type="date" name="updated_to" value="{{ filters.updated_to }}">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="condition-group">
+                <div class="condition-title">
+                    <p>Status</p>
+                    <h3>進捗度・関心度</h3>
+                </div>
+
+                <div class="range-grid">
+                    <div class="range-block">
+                        <span class="range-label">進捗度（作品のみ）</span>
+                        <div class="number-range">
+                            <input
+                                type="number"
+                                name="progress_min"
+                                min="0"
+                                max="100"
+                                value="{{ filters.progress_min }}"
+                                placeholder="0"
+                            >
+                            <span>% ～</span>
+                            <input
+                                type="number"
+                                name="progress_max"
+                                min="0"
+                                max="100"
+                                value="{{ filters.progress_max }}"
+                                placeholder="100"
+                            >
+                            <span>%</span>
+                        </div>
+                    </div>
+
+                    <div class="range-block">
+                        <span class="range-label">関心度</span>
+                        <div class="number-range">
+                            <input
+                                type="number"
+                                name="interest_min"
+                                min="0"
+                                max="100"
+                                value="{{ filters.interest_min }}"
+                                placeholder="0"
+                            >
+                            <span>% ～</span>
+                            <input
+                                type="number"
+                                name="interest_max"
+                                min="0"
+                                max="100"
+                                value="{{ filters.interest_max }}"
+                                placeholder="100"
+                            >
+                            <span>%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <label class="partial-option">
+                <input
+                    type="checkbox"
+                    name="partial"
+                    value="1"
+                    {% if filters.partial %}checked{% endif %}
+                >
+                <span>
+                    <strong>部分検索</strong>
+                    入力した文字を含むものを検索する
+                </span>
+            </label>
+
+            <div class="search-actions">
+                <a class="reset-button" href="{{ url_for('search_page') }}">条件をリセット</a>
+                <button class="search-button" type="submit">検索する</button>
+            </div>
+        </form>
+    </section>
+
+    {% if submitted %}
+        <section class="results-section">
+            <div class="section-heading result-heading">
+                <p>Search Results</p>
+                <h2>検索結果</h2>
+                <span>{{ result_count }} 件見つかりました。</span>
+            </div>
+
+            {% if result_count == 0 %}
+                <div class="no-results">
+                    <p class="sub-title">No Results</p>
+                    <h3>条件に一致する展示物がありません</h3>
+                    <p>検索語を短くするか、日付・数値条件を広げてみてください。</p>
+                </div>
+            {% else %}
+                {% if room_results %}
+                    <div class="result-group">
+                        <div class="result-group-title">
+                            <span>Gallery Rooms</span>
+                            <h3>展示室</h3>
+                            <strong>{{ room_results|length }}件</strong>
+                        </div>
+
+                        <div class="result-grid">
+                            {% for room in room_results %}
+                                <article class="result-card room-result">
+                                    <div class="result-type">展示室</div>
+                                    <h4>{{ room.name }}</h4>
+
+                                    {% if room.short_description %}
+                                        <p class="result-description">{{ room.short_description }}</p>
+                                    {% endif %}
+
+                                    {% if room.tags %}
+                                        <div class="tag-list">
+                                            {% for tag in room.tags.split(',') %}
+                                                {% if tag.strip() %}
+                                                    <span>{{ tag.strip() }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="result-status">
+                                        <span>作品数 <strong>{{ room.work_count }}</strong></span>
+                                        <span>関心度 <strong>{{ room.interest }}%</strong></span>
+                                    </div>
+
+                                    <div class="result-meta">
+                                        <p><span>作成日</span>{{ room.created_at }}</p>
+                                        <p><span>更新日</span>{{ room.updated_at }}</p>
+                                    </div>
+
+                                    <a class="open-button" href="{{ url_for('room_detail', room_id=room.id) }}">
+                                        展示室へ入る
+                                    </a>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if work_results %}
+                    <div class="result-group">
+                        <div class="result-group-title">
+                            <span>Exhibits</span>
+                            <h3>作品</h3>
+                            <strong>{{ work_results|length }}件</strong>
+                        </div>
+
+                        <div class="result-grid">
+                            {% for work in work_results %}
+                                <article class="result-card work-result">
+                                    <div class="result-type">作品</div>
+                                    <h4>{{ work.title }}</h4>
+                                    <p class="parent-room">展示室：{{ work.room_name }}</p>
+
+                                    {% if work.tags %}
+                                        <div class="tag-list">
+                                            {% for tag in work.tags.split(',') %}
+                                                {% if tag.strip() %}
+                                                    <span>{{ tag.strip() }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="result-status">
+                                        <span>進捗度 <strong>{{ work.progress }}%</strong></span>
+                                        <span>関心度 <strong>{{ work.interest }}%</strong></span>
+                                    </div>
+
+                                    <div class="result-meta">
+                                        <p><span>作成日</span>{{ work.created_at }}</p>
+                                        <p><span>更新日</span>{{ work.updated_at }}</p>
+                                    </div>
+
+                                    <a
+                                        class="open-button"
+                                        href="{{ url_for('work_detail', room_id=work.room_id, work_id=work.id) }}"
+                                    >
+                                        作品を見る
+                                    </a>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </section>
+    {% endif %}
+</main>
+</body>
+</html>

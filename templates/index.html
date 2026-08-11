@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ログイン</title>
+        <link rel="stylesheet" href="{{url_for('static', filename='login.css')}}">
+    </head>
+    <body>
+        <h1>小さな展覧会</h1>
+        <section>
+            <h2>ログインする</h2>
+
+            <form action="/login" method="post">
+                <p>
+                    ユーザ名：
+                    <input type="text" name="name">
+                    {% if err_lname %}
+                        <p class="error">{{err_lname}}</p>
+                    {% endif %}
+                </p>
+                <p>
+                    パスワード：
+                    <input type="password" name="password">
+                    {% if err_lpass %}
+                        <p class="error">{{err_lpass}}</p>
+                    {% endif %}
+                </p>
+                <button type="submit">ログイン</button>
+            </form>
+        </section>
+        <section>
+            <h2>新規登録</h2>
+
+            <form action="/register" method="post">
+                <p>
+                    ユーザ名：
+                    <input type="text" name="name">
+                    {% if err_rname %}
+                        <p class="error">{{err_rname}}</p>
+                    {% endif %}
+                </p>
+                <p>
+                    パスワード：
+                    <input type="password" name="password">
+                    {% if err_rpass %}
+                        <p class="error">{{err_rpass}}</p>
+                    {% endif %}
+                </p>
+                <button type="submit">新規登録</button>
+            </form>
+        </section>
+    </body>
+</html>

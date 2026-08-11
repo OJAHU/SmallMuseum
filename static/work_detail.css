@@ -1,0 +1,511 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --ink: #2b2118;
+    --gold: #b9974f;
+    --gold-light: #d6bc74;
+    --cream: #fffaf0;
+}
+
+body {
+    margin: 0;
+
+    color: var(--ink);
+
+    font-family:
+        "Yu Mincho",
+        "Hiragino Mincho ProN",
+        "Yu Gothic",
+        "Meiryo",
+        serif;
+
+    background:
+        linear-gradient(
+            rgba(255, 253, 247, 0.92),
+            rgba(239, 231, 214, 0.96)
+        ),
+        repeating-linear-gradient(
+            90deg,
+            #f7f0e4 0,
+            #f7f0e4 48px,
+            #f1e8d8 48px,
+            #f1e8d8 96px
+        );
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+
+/* =========================
+   ヘッダー
+========================= */
+
+.museum-header {
+    padding: 48px 20px;
+
+    color: #fff8e8;
+
+    background:
+        radial-gradient(
+            circle at top,
+            rgba(218, 184, 95, 0.28),
+            transparent 35%
+        ),
+        linear-gradient(
+            135deg,
+            #1d1412,
+            #3c2a24 55%,
+            #1a1210
+        );
+
+    border-bottom:
+        8px solid var(--gold);
+}
+
+.header-inner {
+    max-width: 1100px;
+
+    margin: auto;
+
+    text-align: center;
+}
+
+.museum-label {
+    margin: 0 0 10px;
+
+    color: var(--gold-light);
+
+    font-size: 14px;
+
+    letter-spacing: 0.22em;
+
+    text-transform: uppercase;
+}
+
+.museum-header h1 {
+    margin: 0;
+
+    font-size: 44px;
+    font-weight: normal;
+
+    letter-spacing: 0.12em;
+}
+
+.room-name {
+    margin: 16px 0;
+
+    color: #e8dcc5;
+}
+
+
+/* タグ */
+
+.work-tags {
+    display: flex;
+
+    justify-content: center;
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    margin: 20px 0;
+}
+
+.tag-block {
+    padding: 6px 12px;
+
+    color: #ead8aa;
+
+    background:
+        rgba(255, 255, 255, 0.08);
+
+    border: 1px solid #8d7139;
+    border-left: 4px solid #d6b86a;
+
+    border-radius: 4px;
+
+    font-size: 13px;
+}
+
+.tag-block::before {
+    content: "#";
+
+    margin-right: 4px;
+
+    color: #d6bc74;
+}
+
+
+/* 進捗など */
+
+.work-status {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+
+    margin: 20px 0 26px;
+}
+
+.work-status span {
+    padding: 7px 16px;
+
+    color: #ead8aa;
+
+    background:
+        rgba(255, 255, 255, 0.08);
+
+    border: 1px solid #8d7139;
+
+    border-radius: 999px;
+}
+
+
+.header-nav {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.header-nav a {
+    display: inline-block;
+
+    padding: 12px 28px;
+
+    color: #241914;
+
+    background: var(--gold);
+
+    border-radius: 999px;
+
+    font-weight: bold;
+
+    box-shadow:
+        0 4px 0 #72582b;
+}
+
+
+/* =========================
+   メイン
+========================= */
+
+.page-main {
+    max-width: 1100px;
+
+    margin: 60px auto;
+
+    padding: 0 28px;
+}
+
+.section-heading {
+    margin-bottom: 30px;
+
+    text-align: center;
+}
+
+.section-heading p {
+    margin: 0 0 8px;
+
+    color: #9b7838;
+
+    font-size: 13px;
+
+    letter-spacing: 0.2em;
+
+    text-transform: uppercase;
+}
+
+.section-heading h2 {
+    margin: 0;
+
+    font-size: 32px;
+    font-weight: normal;
+
+    letter-spacing: 0.12em;
+}
+
+
+/* =========================
+   Word風報告書
+========================= */
+
+.document-workspace {
+    width: 100%;
+
+    padding: 42px;
+
+    overflow: hidden;
+
+    background: #c8c1b5;
+
+    border: 1px solid #b7aa95;
+
+    box-shadow:
+        inset 0 8px 18px
+        rgba(49, 39, 29, 0.08);
+}
+
+.report-stage {
+    position: relative;
+
+    width: 794px;
+    height: 1123px;
+
+    margin: auto;
+}
+
+.report-page {
+    position: relative;
+
+    width: 794px;
+    height: 1123px;
+
+    overflow: hidden;
+
+    transform-origin:
+        top left;
+
+    background: white;
+
+    box-shadow:
+        0 6px 24px
+        rgba(0, 0, 0, 0.24);
+}
+
+
+/* 保存されたオブジェクト */
+
+.report-element {
+    position: absolute;
+
+    overflow: hidden;
+}
+
+.report-text {
+    width: 100%;
+    height: 100%;
+
+    padding: 8px;
+
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+
+/* 画像 */
+
+.report-image img {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: contain;
+}
+
+
+/* 図形 */
+
+.shape-content {
+    width: 100%;
+    height: 100%;
+}
+
+.shape-rectangle {
+    border-radius: 2px;
+}
+
+.shape-triangle {
+    clip-path:
+        polygon(
+            50% 0%,
+            100% 100%,
+            0% 100%
+        );
+}
+
+.shape-circle {
+    border-radius: 50%;
+}
+
+.shape-arrow {
+    clip-path:
+        polygon(
+            0% 34%,
+            64% 34%,
+            64% 12%,
+            100% 50%,
+            64% 88%,
+            64% 66%,
+            0% 66%
+        );
+}
+
+
+/* URL */
+
+.report-link {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    padding: 8px;
+
+    color: #315a93;
+
+    text-decoration: underline;
+
+    overflow-wrap: break-word;
+}
+
+
+/* =========================
+   参考サイト
+========================= */
+
+.references {
+    margin-top: 34px;
+
+    padding: 30px;
+
+    background: #fffaf0;
+
+    border: 1px solid #d8c29a;
+}
+
+.reference-label {
+    margin: 0 0 8px;
+
+    color: #9b7838;
+
+    font-size: 12px;
+
+    letter-spacing: 0.18em;
+
+    text-transform: uppercase;
+}
+
+.references h2 {
+    margin: 0 0 18px;
+
+    font-size: 22px;
+    font-weight: normal;
+}
+
+.reference-text {
+    margin: 0;
+
+    line-height: 1.8;
+
+    white-space: pre-wrap;
+}
+
+
+/* =========================
+   日付
+========================= */
+
+.work-meta {
+    margin-top: 30px;
+
+    padding: 20px 24px;
+
+    background: #f8efd9;
+
+    border: 1px solid #d8c29a;
+}
+
+.work-meta p {
+    display: flex;
+
+    justify-content: space-between;
+
+    margin: 8px 0;
+
+    color: #6b5a46;
+}
+
+
+/* =========================
+   スマホ
+========================= */
+
+@media (max-width: 700px) {
+
+    .museum-header h1 {
+        font-size: 30px;
+    }
+
+    .page-main {
+        padding: 0 14px;
+    }
+
+    .document-workspace {
+        padding: 16px;
+    }
+
+    .work-meta p {
+        flex-direction: column;
+
+        gap: 4px;
+    }
+
+    .header-nav {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+}
+
+/* =========================
+   複数ページ表示
+========================= */
+
+.report-pages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 58px;
+    width: 100%;
+    padding-bottom: 34px;
+}
+
+.report-stage {
+    position: relative;
+    flex: 0 0 auto;
+    margin: 0 auto;
+}
+
+.report-stage::after {
+    content: attr(data-page-label);
+    position: absolute;
+    left: 50%;
+    bottom: -31px;
+    transform: translateX(-50%);
+    padding: 4px 10px;
+    color: #5f4d3b;
+    background: rgba(255, 250, 240, 0.96);
+    border: 1px solid #bca77c;
+    border-radius: 999px;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+    .report-pages {
+        gap: 50px;
+    }
+}

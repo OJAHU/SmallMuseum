@@ -1,0 +1,419 @@
+/* =========================
+   共通左バー
+========================= */
+
+:root {
+    --site-sidebar-width: 300px;
+    --site-sidebar-collapsed-width: 58px;
+    --site-topbar-total-height: 69px;
+}
+
+.site-sidebar,
+.site-sidebar * {
+    box-sizing: border-box;
+}
+
+.site-sidebar {
+    position: fixed;
+    top: var(--site-topbar-total-height);
+    left: 0;
+    bottom: 0;
+    z-index: 4500;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    width: var(--site-sidebar-width);
+    color: #f8ecd6;
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),
+        linear-gradient(180deg, #211714, #33231e 48%, #1b1311);
+    border-right: 3px solid #b9974f;
+    box-shadow: 7px 0 22px rgba(38, 27, 19, 0.22);
+    font-family:
+        "Yu Mincho",
+        "Hiragino Mincho ProN",
+        "Yu Gothic",
+        "Meiryo",
+        serif;
+    transition: width 0.22s ease;
+}
+
+.site-sidebar__rail {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 12px;
+    background: rgba(0, 0, 0, 0.15);
+    border-right: 1px solid rgba(214, 188, 116, 0.22);
+}
+
+.site-sidebar__toggle {
+    width: 32px;
+    min-height: 84px;
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: #ead8aa;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(214, 188, 116, 0.48);
+    border-radius: 5px;
+    font: inherit;
+    cursor: pointer;
+    transition: 0.18s;
+}
+
+.site-sidebar__toggle:hover,
+.site-sidebar__toggle:focus-visible {
+    color: #241914;
+    background: #d6bc74;
+    border-color: #ead69b;
+    outline: none;
+}
+
+.site-sidebar__toggle-icon {
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 23px;
+    line-height: 1;
+}
+
+.site-sidebar__toggle-label {
+    writing-mode: vertical-rl;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+}
+
+.site-sidebar__panel {
+    min-width: 0;
+    height: 100%;
+    padding: 20px 16px 34px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #8f7138 #241914;
+    transition: opacity 0.15s ease;
+}
+
+.site-sidebar__heading {
+    padding: 3px 4px 18px;
+    border-bottom: 1px solid rgba(214, 188, 116, 0.3);
+}
+
+.site-sidebar__heading p,
+.site-sidebar__section-title > span {
+    margin: 0 0 5px;
+    color: #cdb981;
+    font-size: 9px;
+    letter-spacing: 0.19em;
+    text-transform: uppercase;
+}
+
+.site-sidebar__heading h2 {
+    margin: 0;
+    color: #fff8e8;
+    font-size: 21px;
+    font-weight: normal;
+    letter-spacing: 0.12em;
+}
+
+.site-sidebar__section {
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(214, 188, 116, 0.22);
+}
+
+.site-sidebar__section:last-child {
+    border-bottom: 0;
+}
+
+.site-sidebar__section-title {
+    margin-bottom: 12px;
+}
+
+.site-sidebar__section-title h3 {
+    margin: 0;
+    overflow: hidden;
+    color: #fff3dd;
+    font-size: 16px;
+    font-weight: normal;
+    letter-spacing: 0.08em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.site-sidebar__room-list,
+.site-sidebar__work-list {
+    display: grid;
+    gap: 7px;
+}
+
+.site-sidebar__room-link,
+.site-sidebar__work-link {
+    display: grid;
+    align-items: center;
+    min-width: 0;
+    color: #ebdfc8;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(214, 188, 116, 0.22);
+    border-left: 3px solid transparent;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: 0.17s;
+}
+
+.site-sidebar__room-link {
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    gap: 8px;
+    min-height: 42px;
+    padding: 8px 9px;
+}
+
+.site-sidebar__room-link:hover,
+.site-sidebar__work-link:hover,
+.site-sidebar__room-link:focus-visible,
+.site-sidebar__work-link:focus-visible {
+    color: #fff8e8;
+    background: rgba(185, 151, 79, 0.17);
+    border-color: rgba(214, 188, 116, 0.52);
+    border-left-color: #d6bc74;
+    outline: none;
+}
+
+.site-sidebar__room-link.is-active,
+.site-sidebar__work-link.is-active {
+    color: #2b2118;
+    background: linear-gradient(135deg, #ead9a2, #b9974f);
+    border-color: #ead69b;
+    border-left-color: #fff1bd;
+}
+
+.site-sidebar__room-mark {
+    color: #d6bc74;
+    font-size: 9px;
+}
+
+.site-sidebar__room-link.is-active .site-sidebar__room-mark {
+    color: #4b371f;
+}
+
+.site-sidebar__room-name {
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.site-sidebar__room-count {
+    min-width: 24px;
+    padding: 3px 6px;
+    color: #5a452a;
+    background: #f2dfaa;
+    border-radius: 999px;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 10px;
+    text-align: center;
+}
+
+.site-sidebar__filter-block + .site-sidebar__filter-block {
+    margin-top: 14px;
+}
+
+.site-sidebar__filter-title {
+    margin: 0 0 7px;
+    color: #e9d7a8;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+}
+
+.site-sidebar__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.site-sidebar__chip {
+    max-width: 100%;
+    padding: 5px 8px;
+    overflow: hidden;
+    color: #e8ddc8;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(214, 188, 116, 0.3);
+    border-radius: 999px;
+    font: inherit;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.site-sidebar__chip:hover,
+.site-sidebar__chip:focus-visible,
+.site-sidebar__chip.is-active {
+    color: #2b2118;
+    background: #d6bc74;
+    border-color: #ead69b;
+    outline: none;
+}
+
+.site-sidebar__chips--range .site-sidebar__chip {
+    min-width: 54px;
+}
+
+.site-sidebar__works-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 18px 0 9px;
+    padding-top: 13px;
+    border-top: 1px solid rgba(214, 188, 116, 0.2);
+    color: #ead8aa;
+    font-size: 12px;
+}
+
+.site-sidebar__works-heading strong {
+    min-width: 28px;
+    padding: 3px 7px;
+    color: #30231a;
+    background: #d6bc74;
+    border-radius: 999px;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 10px;
+    text-align: center;
+}
+
+.site-sidebar__work-link {
+    padding: 9px 10px;
+}
+
+.site-sidebar__work-title {
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.site-sidebar__work-meta {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+    color: #cbbda6;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+}
+
+.site-sidebar__work-link.is-active .site-sidebar__work-meta {
+    color: #4c3a24;
+}
+
+.site-sidebar__work-meta small {
+    font-size: 9px;
+}
+
+.site-sidebar__empty,
+.site-sidebar__guide p {
+    margin: 0;
+    color: #cbbda6;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 11px;
+    line-height: 1.7;
+}
+
+.site-sidebar__empty[hidden],
+.site-sidebar__work-link[hidden] {
+    display: none !important;
+}
+
+/* 閉じた状態 */
+.site-sidebar.is-collapsed {
+    width: var(--site-sidebar-collapsed-width);
+    grid-template-columns: 100% 0;
+}
+
+.site-sidebar.is-collapsed .site-sidebar__rail {
+    border-right: 0;
+}
+
+.site-sidebar.is-collapsed .site-sidebar__toggle {
+    width: 38px;
+}
+
+.site-sidebar.is-collapsed .site-sidebar__panel {
+    width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 左バー分だけページを右へ送りつつ、main は残り領域の中央を保つ。 */
+.site-sidebar:not(.is-collapsed) ~ .page-header,
+.site-sidebar:not(.is-collapsed) ~ .museum-header {
+    margin-left: var(--site-sidebar-width);
+}
+
+.site-sidebar.is-collapsed ~ .page-header,
+.site-sidebar.is-collapsed ~ .museum-header {
+    margin-left: var(--site-sidebar-collapsed-width);
+}
+
+.site-sidebar:not(.is-collapsed) ~ .page-main {
+    width: calc(100% - var(--site-sidebar-width) - 56px);
+    transform: translateX(calc(var(--site-sidebar-width) / 2));
+}
+
+.site-sidebar.is-collapsed ~ .page-main {
+    width: calc(100% - var(--site-sidebar-collapsed-width) - 56px);
+    transform: translateX(calc(var(--site-sidebar-collapsed-width) / 2));
+}
+
+.site-sidebar ~ .page-header,
+.site-sidebar ~ .museum-header {
+    transition: margin-left 0.22s ease;
+}
+
+.site-sidebar ~ .page-main {
+    transition: width 0.22s ease, transform 0.22s ease;
+}
+
+@media (max-width: 900px) {
+    :root {
+        --site-sidebar-width: min(320px, 88vw);
+    }
+
+    .site-sidebar:not(.is-collapsed) ~ .page-header,
+    .site-sidebar:not(.is-collapsed) ~ .museum-header,
+    .site-sidebar.is-collapsed ~ .page-header,
+    .site-sidebar.is-collapsed ~ .museum-header {
+        margin-left: 0;
+    }
+
+    .site-sidebar:not(.is-collapsed) ~ .page-main,
+    .site-sidebar.is-collapsed ~ .page-main {
+        width: auto;
+        transform: none;
+    }
+
+    .site-sidebar {
+        box-shadow: 9px 0 28px rgba(25, 17, 12, 0.34);
+    }
+
+    .site-sidebar.is-collapsed {
+        transform: translateX(calc(-1 * var(--site-sidebar-collapsed-width) + 12px));
+    }
+
+    .site-sidebar.is-collapsed .site-sidebar__toggle {
+        position: absolute;
+        right: -34px;
+        width: 34px;
+        background: #2b1e19;
+        border-left: 0;
+        border-radius: 0 5px 5px 0;
+    }
+}
+
+@media (max-width: 760px) {
+    :root {
+        --site-topbar-total-height: 63px;
+    }
+}

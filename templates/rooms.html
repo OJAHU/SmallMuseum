@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>展示室一覧</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='rooms.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='topbar.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='sidebar.css') }}">
+</head>
+
+    <body>
+        
+{% include 'topbar.html' %}
+{% include 'sidebar.html' %}
+
+<header class="page-header">
+            <div class="header-content">
+                <p class="sub-title">Small Museum</p>
+                <h1>展示室一覧</h1>
+                <p class="user-name">作者：{{ username }}</p>
+
+                <nav class="header-nav">
+                    <a href="{{ url_for('search_page') }}">検索する</a>
+                    <a href="{{ url_for('room_create') }}">展示室を増設する</a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="page-main">
+            {% if rooms %}
+                <section class="rooms-section">
+                    <div class="section-heading">
+                        <p>Gallery Rooms</p>
+                        <h2>展示室</h2>
+                        <span>気になる展示室をクリックすると詳しい説明が開きます。</span>
+                    </div>
+
+                    <div class="rooms-grid">
+                        {% for room in rooms %}
+                            <article class="room-card">
+                                <details class="room-details">
+                                    <summary class="room-summary">
+                                        <div class="room-front">
+                                            <p class="room-number">Room {{ loop.index }}</p>
+
+                                            <h3>{{ room.name }}</h3>
+
+                                            {% if room.short_description %}
+                                                <p class="short-description">{{ room.short_description }}</p>
+                                            {% else %}
+                                                <p class="short-description">短い説明はまだありません。</p>
+                                            {% endif %}
+
+                                            {% if room.tags %}
+                                                <div class="room-tags">
+                                                    {% for tag in room.tags.split(",") %}
+                                                        {% if tag.strip() %}
+                                                            <span class="tag-block">{{ tag.strip() }}</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+
+                                            <p class="work-count">作品数：{{ room.work_count }}</p>
+
+                                            <p class="open-text">クリックで詳細を見る</p>
+                                        </div>
+                                    </summary>
+
+                                    <div class="room-back">
+                                        <div class="detail-label">
+                                            <span>Exhibition Note</span>
+                                            <h4>展示室の説明</h4>
+                                        </div>
+
+                                        <div class="description-panel">
+                                            {% if room.description %}
+                                                <p class="room-description">{{ room.description }}</p>
+                                            {% else %}
+                                                <p class="room-description">詳しい説明はまだありません。</p>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="interest-panel">
+                                            <div class="interest-head">
+                                                <span>関心度</span>
+                                                <strong>{{ room.interest }}%</strong>
+                                            </div>
+
+                                            <div class="interest-bar">
+                                                <div class="interest-fill" style="width: {{ room.interest }}%;"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="room-meta">
+                                            <p>
+                                                <span>作成日</span>
+                                                {{ room.created_at }}
+                                            </p>
+                                            <p>
+                                                <span>更新日</span>
+                                                {{ room.updated_at }}
+                                            </p>
+                                        </div>
+
+                                        <nav class="room-actions">
+
+                                            <a href="{{ url_for('room_detail', room_id=room.id) }}">
+                                                入室
+                                            </a>
+
+                                            <a href="{{ url_for('room_edit', room_id=room.id) }}">
+                                                改修
+                                            </a>
+
+                                            <form
+                                                action="{{ url_for('room_delete', room_id=room.id) }}"
+                                                method="post"
+                                                onsubmit="return confirm('「{{ room.name }}」を撤去しますか？\n展示室内の作品もすべて削除されます。');"
+                                            >
+                                                <button
+                                                    class="delete-button"
+                                                    type="submit"
+                                                >
+                                                    撤去
+                                                </button>
+                                            </form>
+
+                                        </nav>
+                                    </div>
+                                </details>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% else %}
+                <section class="empty-section">
+                    <div class="empty-card">
+                        <p class="sub-title">No Exhibition Room</p>
+                        <h2>展示室がありません</h2>
+                        <p>展示室を増設して自分だけの展覧会を作ろう！</p>
+                        <a href="{{ url_for('room_create') }}">展示室を増設する</a>
+                    </div>
+                </section>
+            {% endif %}
+        </main>
+    </body>
+</html>

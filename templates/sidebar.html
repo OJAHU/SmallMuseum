@@ -1,0 +1,247 @@
+<aside
+    id="site-sidebar"
+    class="site-sidebar"
+    aria-label="展示ナビゲーション"
+    data-current-room="{{ sidebar_current_room_id or '' }}"
+>
+    <div class="site-sidebar__rail">
+        <button
+            id="site-sidebar-toggle"
+            class="site-sidebar__toggle"
+            type="button"
+            aria-controls="site-sidebar-panel"
+            aria-expanded="true"
+            title="左バーを閉じる"
+        >
+            <span class="site-sidebar__toggle-icon" aria-hidden="true">‹</span>
+            <span class="site-sidebar__toggle-label">閉じる</span>
+        </button>
+    </div>
+
+    <div id="site-sidebar-panel" class="site-sidebar__panel">
+        <div class="site-sidebar__heading">
+            <p>Collection Navigator</p>
+            <h2>展示ナビ</h2>
+        </div>
+
+        <section class="site-sidebar__section">
+            <div class="site-sidebar__section-title">
+                <span>Rooms</span>
+                <h3>展示室一覧</h3>
+            </div>
+
+            {% if sidebar_rooms %}
+                <nav class="site-sidebar__room-list" aria-label="展示室一覧">
+                    {% for sidebar_room in sidebar_rooms %}
+                        <a
+                            class="site-sidebar__room-link {% if sidebar_current_room_id == sidebar_room.id %}is-active{% endif %}"
+                            href="{{ url_for('room_detail', room_id=sidebar_room.id) }}"
+                        >
+                            <span class="site-sidebar__room-mark" aria-hidden="true">◆</span>
+                            <span class="site-sidebar__room-name">{{ sidebar_room.name }}</span>
+                            <span class="site-sidebar__room-count">{{ sidebar_room.work_count }}</span>
+                        </a>
+                    {% endfor %}
+                </nav>
+            {% else %}
+                <p class="site-sidebar__empty">展示室はまだありません。</p>
+            {% endif %}
+        </section>
+
+        {% if sidebar_current_room %}
+            <section class="site-sidebar__section site-sidebar__section--works">
+                <div class="site-sidebar__section-title">
+                    <span>Works</span>
+                    <h3>{{ sidebar_current_room.name }}</h3>
+                </div>
+
+                {% if sidebar_tags %}
+                    <div class="site-sidebar__filter-block">
+                        <p class="site-sidebar__filter-title">タグ一覧</p>
+                        <div class="site-sidebar__chips" data-filter-group="tag">
+                            <button class="site-sidebar__chip is-active" type="button" data-tag="">すべて</button>
+                            {% for tag in sidebar_tags %}
+                                <button class="site-sidebar__chip" type="button" data-tag="{{ tag|e }}">#{{ tag }}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="site-sidebar__filter-block">
+                    <p class="site-sidebar__filter-title">関心度レンジ</p>
+                    <div class="site-sidebar__chips site-sidebar__chips--range" data-filter-group="interest">
+                        <button class="site-sidebar__chip is-active" type="button" data-min="0" data-max="100">すべて</button>
+                        <button class="site-sidebar__chip" type="button" data-min="0" data-max="20">0–20</button>
+                        <button class="site-sidebar__chip" type="button" data-min="21" data-max="40">21–40</button>
+                        <button class="site-sidebar__chip" type="button" data-min="41" data-max="60">41–60</button>
+                        <button class="site-sidebar__chip" type="button" data-min="61" data-max="80">61–80</button>
+                        <button class="site-sidebar__chip" type="button" data-min="81" data-max="100">81–100</button>
+                    </div>
+                </div>
+
+                <div class="site-sidebar__filter-block">
+                    <p class="site-sidebar__filter-title">進捗度レンジ</p>
+                    <div class="site-sidebar__chips site-sidebar__chips--range" data-filter-group="progress">
+                        <button class="site-sidebar__chip is-active" type="button" data-min="0" data-max="100">すべて</button>
+                        <button class="site-sidebar__chip" type="button" data-min="0" data-max="20">0–20</button>
+                        <button class="site-sidebar__chip" type="button" data-min="21" data-max="40">21–40</button>
+                        <button class="site-sidebar__chip" type="button" data-min="41" data-max="60">41–60</button>
+                        <button class="site-sidebar__chip" type="button" data-min="61" data-max="80">61–80</button>
+                        <button class="site-sidebar__chip" type="button" data-min="81" data-max="100">81–100</button>
+                    </div>
+                </div>
+
+                <div class="site-sidebar__works-heading">
+                    <span>作品一覧</span>
+                    <strong id="site-sidebar-result-count">{{ sidebar_works|length }}</strong>
+                </div>
+
+                {% if sidebar_works %}
+                    <nav id="site-sidebar-work-list" class="site-sidebar__work-list" aria-label="作品一覧">
+                        {% for sidebar_work in sidebar_works %}
+                            <a
+                                class="site-sidebar__work-link {% if sidebar_current_work_id == sidebar_work.id %}is-active{% endif %}"
+                                href="{{ url_for('work_detail', room_id=sidebar_work.room_id, work_id=sidebar_work.id) }}"
+                                data-tags="{{ sidebar_work.tags|default('', true)|lower|e }}"
+                                data-progress="{{ sidebar_work.progress }}"
+                                data-interest="{{ sidebar_work.interest }}"
+                            >
+                                <span class="site-sidebar__work-title">{{ sidebar_work.title }}</span>
+                                <span class="site-sidebar__work-meta">
+                                    <small>進捗 {{ sidebar_work.progress }}%</small>
+                                    <small>関心 {{ sidebar_work.interest }}%</small>
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </nav>
+                    <p id="site-sidebar-no-work" class="site-sidebar__empty" hidden>条件に合う作品がありません。</p>
+                {% else %}
+                    <p class="site-sidebar__empty">この展示室には作品がありません。</p>
+                {% endif %}
+            </section>
+        {% else %}
+            <section class="site-sidebar__section site-sidebar__guide">
+                <p>展示室を選択すると、作品一覧・タグ・関心度・進捗度から作品を絞り込めます。</p>
+            </section>
+        {% endif %}
+    </div>
+</aside>
+
+<script>
+(function () {
+    const sidebar = document.getElementById("site-sidebar");
+    const toggle = document.getElementById("site-sidebar-toggle");
+
+    if (!sidebar || !toggle) {
+        return;
+    }
+
+    const storageKey = "smallMuseum.sidebarCollapsed";
+    const saved = localStorage.getItem(storageKey);
+    const defaultCollapsed = window.matchMedia("(max-width: 900px)").matches;
+    const shouldCollapse = saved === null ? defaultCollapsed : saved === "1";
+
+    function setCollapsed(collapsed) {
+        sidebar.classList.toggle("is-collapsed", collapsed);
+        toggle.setAttribute("aria-expanded", String(!collapsed));
+        toggle.title = collapsed ? "左バーを開く" : "左バーを閉じる";
+
+        const icon = toggle.querySelector(".site-sidebar__toggle-icon");
+        const label = toggle.querySelector(".site-sidebar__toggle-label");
+
+        if (icon) {
+            icon.textContent = collapsed ? "›" : "‹";
+        }
+
+        if (label) {
+            label.textContent = collapsed ? "開く" : "閉じる";
+        }
+    }
+
+    setCollapsed(shouldCollapse);
+
+    toggle.addEventListener("click", function () {
+        const collapsed = !sidebar.classList.contains("is-collapsed");
+        setCollapsed(collapsed);
+        localStorage.setItem(storageKey, collapsed ? "1" : "0");
+    });
+
+    const workList = document.getElementById("site-sidebar-work-list");
+
+    if (!workList) {
+        return;
+    }
+
+    const items = [...workList.querySelectorAll(".site-sidebar__work-link")];
+    const count = document.getElementById("site-sidebar-result-count");
+    const noWork = document.getElementById("site-sidebar-no-work");
+
+    const state = {
+        tag: "",
+        interestMin: 0,
+        interestMax: 100,
+        progressMin: 0,
+        progressMax: 100
+    };
+
+    function applyFilters() {
+        let visible = 0;
+
+        items.forEach(item => {
+            const tags = (item.dataset.tags || "")
+                .split(",")
+                .map(tag => tag.trim())
+                .filter(Boolean);
+            const progress = Number(item.dataset.progress || 0);
+            const interest = Number(item.dataset.interest || 0);
+
+            const tagMatches = !state.tag || tags.includes(state.tag.toLowerCase());
+            const interestMatches = interest >= state.interestMin && interest <= state.interestMax;
+            const progressMatches = progress >= state.progressMin && progress <= state.progressMax;
+            const matches = tagMatches && interestMatches && progressMatches;
+
+            item.hidden = !matches;
+
+            if (matches) {
+                visible += 1;
+            }
+        });
+
+        if (count) {
+            count.textContent = String(visible);
+        }
+
+        if (noWork) {
+            noWork.hidden = visible !== 0;
+        }
+    }
+
+    document.querySelectorAll("[data-filter-group]").forEach(group => {
+        group.addEventListener("click", function (event) {
+            const button = event.target.closest("button");
+
+            if (!button || !group.contains(button)) {
+                return;
+            }
+
+            group.querySelectorAll("button").forEach(candidate => {
+                candidate.classList.toggle("is-active", candidate === button);
+            });
+
+            const groupName = group.dataset.filterGroup;
+
+            if (groupName === "tag") {
+                state.tag = button.dataset.tag || "";
+            } else if (groupName === "interest") {
+                state.interestMin = Number(button.dataset.min || 0);
+                state.interestMax = Number(button.dataset.max || 100);
+            } else if (groupName === "progress") {
+                state.progressMin = Number(button.dataset.min || 0);
+                state.progressMax = Number(button.dataset.max || 100);
+            }
+
+            applyFilters();
+        });
+    });
+})();
+</script>

@@ -1,0 +1,2548 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        {% if mode == "edit" %}
+            作品編集
+        {% else %}
+            作品作成
+        {% endif %}
+    </title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='work_create.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='topbar.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='sidebar.css') }}">
+</head>
+<body>
+
+
+{% include 'topbar.html' %}
+{% include 'sidebar.html' %}
+
+<header class="museum-header">
+    <div class="header-inner">
+        <p class="museum-label">New Exhibit</p>
+        <h1>
+            {% if mode == "edit" %}
+                作品編集
+            {% else %}
+                作品作成
+            {% endif %}
+        </h1>
+
+        <p class="header-text">
+            {% if mode == "edit" %}
+                「{{ work.title }}」を編集します。
+            {% else %}
+                「{{ room.name }}」に新しい作品を展示します。
+            {% endif %}
+        </p>
+        <nav class="header-nav">
+            <a class="nav-button" href="{{ url_for('room_detail', room_id=room.id) }}">
+                作品一覧へ戻る
+            </a>
+            <a class="nav-button" href="{{ url_for('search_page') }}">
+                検索する
+            </a>
+        </nav>
+    </div>
+</header>
+
+<main class="page-main">
+    <section class="create-work-card">
+        <div class="card-title-area">
+            <p class="card-label">
+                {% if mode == "edit" %}
+                    Edit Work
+                {% else %}
+                    New Work
+                {% endif %}
+            </p>
+
+            <h2>
+                {% if mode == "edit" %}
+                    作品を編集
+                {% else %}
+                    新しい作品
+                {% endif %}
+            </h2>
+            <p>作品の基本情報と、展示する作品報告書を作成してください。</p>
+        </div>
+
+        <form class="work-form" method="post">
+            <div class="basic-info-grid">
+                <div class="form-item full-width">
+                    <label for="title">題名</label>
+                    <input
+                        id="title"
+                        type="text"
+                        name="title"
+                        value="{{ work.title if work else '' }}"
+                        placeholder="例：ファイル整理アプリ"
+                        required
+                    >
+                    {% if error_title %}
+                        <p class="error">{{ error_title }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="form-item full-width">
+                    <label for="tags">タグ・キーワード</label>
+                    <input
+                        id="tags"
+                        type="text"
+                        name="tags"
+                        value="{{ work.tags if work else '' }}"
+                        placeholder="例：Python,GUI,ファイル管理"
+                    >
+                </div>
+
+                <div class="form-item">
+                    <label for="progress">
+                        進捗度：
+                        <span id="progress-value">
+                            {{ work.progress if work else 0 }}%
+                        </span>
+                    </label>
+
+                    <input
+                        id="progress"
+                        class="range-input"
+                        type="range"
+                        name="progress"
+                        min="0"
+                        max="100"
+                        value="{{ work.progress if work else 0 }}"
+                    >
+                    <div class="range-labels">
+                        <span>0%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+
+                <div class="form-item">
+                    <label for="interest">
+                        関心度：
+                        <span id="interest-value">
+                            {{ work.interest if work else 50 }}%
+                        </span>
+                    </label>
+
+                    <input
+                        id="interest"
+                        class="range-input"
+                        type="range"
+                        name="interest"
+                        min="0"
+                        max="100"
+                        value="{{ work.interest if work else 50 }}"
+                    >
+                    <div class="range-labels">
+                        <span>0%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+            </div>
+
+            <section class="report-area">
+                <div class="report-heading">
+                    <p class="card-label">Work Report</p>
+                    <h2>作品報告書</h2>
+                    <p>
+                        テキスト・見出し・画像・図形などを追加して、自由に配置できます。
+                        画像と図形は本体をドラッグ、文字要素は選択後の「移動」ハンドルから移動できます。
+                    </p>
+                </div>
+
+                <div class="editor-toolbar">
+                    <div class="toolbar-group history-group">
+                        <button id="undo-button" type="button" onclick="undoEditor()" title="元に戻す (Ctrl+Z)">↶ 元に戻す</button>
+                        <button id="redo-button" type="button" onclick="redoEditor()" title="やり直す (Ctrl+Y)">↷ やり直す</button>
+                    </div>
+
+                    <div class="toolbar-group page-tools">
+                        <button id="add-page-button" type="button" onclick="addPage()" title="新しい用紙を追加">＋ 用紙を追加</button>
+                        <button id="delete-page-button" type="button" onclick="deleteActivePage()" title="現在の用紙を削除">－ 用紙を削除</button>
+                        <span id="page-indicator" class="page-indicator" aria-live="polite">1 / 1 ページ</span>
+                    </div>
+
+                    <div class="toolbar-group">
+                        <button type="button" onclick="addText()">テキスト</button>
+                        <button type="button" onclick="addHeading(1)">見出し1</button>
+                        <button type="button" onclick="addHeading(2)">見出し2</button>
+                        <button type="button" onclick="addHeading(3)">見出し3</button>
+                        <button type="button" onclick="selectImage()">画像</button>
+
+                        <div class="shape-picker">
+                            <button
+                                id="shape-picker-button"
+                                class="shape-picker-button"
+                                type="button"
+                                onclick="toggleShapeMenu(event)"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                            >
+                                図形 ▾
+                            </button>
+
+                            <div id="shape-menu" class="shape-menu" hidden>
+                                <button type="button" onclick="addShape('rectangle')">
+                                    <span class="shape-preview shape-preview-rectangle"></span>
+                                    四角
+                                </button>
+                                <button type="button" onclick="addShape('triangle')">
+                                    <span class="shape-preview shape-preview-triangle"></span>
+                                    三角
+                                </button>
+                                <button type="button" onclick="addShape('circle')">
+                                    <span class="shape-preview shape-preview-circle"></span>
+                                    丸
+                                </button>
+                                <button type="button" onclick="addShape('arrow')">
+                                    <span class="shape-preview shape-preview-arrow"></span>
+                                    矢印
+                                </button>
+                            </div>
+                        </div>
+
+                        <label class="shape-color-control" title="選択した図形の色">
+                            <span>図形色</span>
+                            <input
+                                id="shape-color"
+                                class="shape-color-input"
+                                type="color"
+                                value="#d6bc74"
+                                disabled
+                                aria-label="図形の色"
+                            >
+                        </label>
+
+                        <button type="button" onclick="addLink()">URL</button>
+                    </div>
+
+                    <div class="toolbar-group">
+                        <select id="font-family" onchange="changeFont()" title="選択した文字のフォント">
+                            <option value='"Yu Gothic", sans-serif'>ゴシック</option>
+                            <option value='"Yu Mincho", serif'>明朝</option>
+                            <option value="serif">Serif</option>
+                            <option value="sans-serif">Sans Serif</option>
+                            <option value="monospace">Monospace</option>
+                        </select>
+
+                        <select id="font-size" onchange="changeFontSize()" title="選択した文字の大きさ">
+                            <option value="12">12</option>
+                            <option value="14">14</option>
+                            <option value="16" selected>16</option>
+                            <option value="18">18</option>
+                            <option value="21">21</option>
+                            <option value="24">24</option>
+                            <option value="26">26</option>
+                            <option value="32">32</option>
+                            <option value="40">40</option>
+                        </select>
+
+                        <input
+                            id="font-color"
+                            class="text-color-input"
+                            type="color"
+                            value="#2f2a24"
+                            title="選択した文字の色"
+                        >
+
+                        <button class="text-style-button" type="button" onclick="toggleBold()" title="選択した文字を太字"><strong>B</strong></button>
+                        <button class="text-style-button" type="button" onclick="toggleUnderline()" title="選択した文字に下線"><u>U</u></button>
+                        <button class="text-style-button" type="button" onclick="toggleStrikeThrough()" title="選択した文字に取り消し線"><s>S</s></button>
+                    </div>
+
+                    <div class="toolbar-group">
+                        <button type="button" onclick="setAlign('left')">左</button>
+                        <button type="button" onclick="setAlign('center')">中央</button>
+                        <button type="button" onclick="setAlign('right')">右</button>
+                    </div>
+
+                    <div class="toolbar-group">
+                        <button type="button" onclick="copyElement()">コピー</button>
+                        <button type="button" onclick="bringFront()">前面</button>
+                        <button type="button" onclick="sendBack()">背面</button>
+                        <button type="button" class="danger-button" onclick="deleteElement()">削除</button>
+                    </div>
+                </div>
+
+                <div id="document-workspace" class="document-workspace">
+                    <div id="report-pages" class="report-pages">
+                        <div class="report-page-stage active-page-stage" data-page-label="1ページ">
+                            <div class="report-page"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <input
+                    id="image-input"
+                    type="file"
+                    accept="image/*,.heic,.heif,.tif,.tiff"
+                    hidden
+                >
+                <p id="image-message" class="editor-message" aria-live="polite"></p>
+                <input id="content-json" type="hidden" name="content_json" value="">
+
+                <div class="form-item reference-area">
+                    <label for="reference-sites">参考サイトなど</label>
+                    <textarea
+                        id="reference-sites"
+                        name="reference_sites"
+                        placeholder="参考にしたURLや資料などを入力してください"
+                    >{{ work.reference_sites if work else '' }}</textarea>
+                </div>
+            </section>
+
+            <div class="button-area">
+
+                {% if mode == "edit" %}
+
+                    <a
+                        class="back-button"
+                        href="{{ url_for(
+                            'work_detail',
+                            room_id=room.id,
+                            work_id=work.id
+                        ) }}"
+                    >
+                        編集をやめる
+                    </a>
+
+                {% else %}
+
+                    <a
+                        class="back-button"
+                        href="{{ url_for(
+                            'room_detail',
+                            room_id=room.id
+                        ) }}"
+                    >
+                        戻る
+                    </a>
+
+                {% endif %}
+
+
+                <button
+                    class="submit-button"
+                    type="submit"
+                >
+                    {% if mode == "edit" %}
+                        変更を保存する
+                    {% else %}
+                        作品を作成する
+                    {% endif %}
+                </button>
+
+            </div>
+        </form>
+    </section>
+</main>
+
+<script>
+function setupRange(inputId, valueId) {
+    const input = document.getElementById(inputId);
+    const output = document.getElementById(valueId);
+
+    function update() {
+        const value = input.value;
+        output.textContent = value + "%";
+        input.style.background =
+            `linear-gradient(to right, #b9974f 0%, #b9974f ${value}%, #ddd0b8 ${value}%, #ddd0b8 100%)`;
+    }
+
+    input.addEventListener("input", update);
+    update();
+}
+
+setupRange("progress", "progress-value");
+setupRange("interest", "interest-value");
+</script>
+
+<script>
+const initialReport = {{ report | tojson }};
+const workspace = document.getElementById("document-workspace");
+const pagesContainer = document.getElementById("report-pages");
+const contentInput = document.getElementById("content-json");
+const imageInput = document.getElementById("image-input");
+const imageMessage = document.getElementById("image-message");
+const undoButton = document.getElementById("undo-button");
+const redoButton = document.getElementById("redo-button");
+const addPageButton = document.getElementById("add-page-button");
+const deletePageButton = document.getElementById("delete-page-button");
+const pageIndicator = document.getElementById("page-indicator");
+
+let page = pagesContainer.querySelector(".report-page");
+let pageStage = pagesContainer.querySelector(".report-page-stage");
+let activePageIndex = 0;
+
+const PAGE_WIDTH = 794;
+const PAGE_HEIGHT = 1123;
+const MIN_PAGE_SCALE = 0.25;
+const OBJECT_GAP = 4;
+const RESISTANCE_DISTANCE = 14;
+const MAX_HISTORY = 60;
+const TEXT_HISTORY_INTERVAL = 700;
+const MAX_STORED_IMAGE_EDGE = 2000;
+
+let pageScale = 1;
+let selectedElement = null;
+let highestZ = 1;
+let spawnCount = 0;
+let lastTextRange = null;
+let lastRangeEditable = null;
+let historyRestoring = false;
+let lastTextHistoryAt = 0;
+let lastTextHistoryTarget = null;
+let elementClipboard = null;
+
+const undoStack = [];
+const redoStack = [];
+const boundElements = new WeakSet();
+const boundEditables = new WeakSet();
+const boundsObservers = new WeakMap();
+
+/* =========================
+   用紙のレスポンシブ表示
+========================= */
+
+function getPageStages() {
+    return [...pagesContainer.querySelectorAll(".report-page-stage")];
+}
+
+function updatePageControls() {
+    const stages = getPageStages();
+    const count = stages.length;
+
+    activePageIndex = Math.max(0, Math.min(activePageIndex, count - 1));
+
+    stages.forEach((stage, index) => {
+        stage.classList.toggle("active-page-stage", index === activePageIndex);
+        stage.dataset.pageLabel = `${index + 1}ページ`;
+    });
+
+    if (pageIndicator) {
+        pageIndicator.textContent = `${activePageIndex + 1} / ${count} ページ`;
+    }
+
+    if (deletePageButton) {
+        deletePageButton.disabled = count <= 1;
+    }
+}
+
+function setActivePage(target) {
+    const stages = getPageStages();
+    if (stages.length === 0) {
+        return;
+    }
+
+    let index;
+
+    if (typeof target === "number") {
+        index = target;
+    } else if (target instanceof Element) {
+        const stage = target.classList.contains("report-page-stage")
+            ? target
+            : target.closest(".report-page-stage");
+        index = stages.indexOf(stage);
+    } else {
+        index = activePageIndex;
+    }
+
+    if (index < 0) {
+        index = 0;
+    }
+
+    activePageIndex = Math.max(0, Math.min(index, stages.length - 1));
+    pageStage = stages[activePageIndex];
+    page = pageStage.querySelector(".report-page");
+    updatePageControls();
+}
+
+function createPageStage() {
+    const stage = document.createElement("div");
+    stage.className = "report-page-stage";
+
+    const newPage = document.createElement("div");
+    newPage.className = "report-page";
+
+    stage.appendChild(newPage);
+    return stage;
+}
+
+function updatePageScale() {
+    const workspaceStyle = getComputedStyle(workspace);
+    const horizontalPadding =
+        parseFloat(workspaceStyle.paddingLeft) +
+        parseFloat(workspaceStyle.paddingRight);
+
+    const availableWidth = Math.max(
+        1,
+        workspace.clientWidth - horizontalPadding
+    );
+
+    pageScale = Math.min(1, availableWidth / PAGE_WIDTH);
+    pageScale = Math.max(MIN_PAGE_SCALE, pageScale);
+
+    getPageStages().forEach(stage => {
+        const pageElement = stage.querySelector(".report-page");
+        if (!pageElement) {
+            return;
+        }
+
+        pageElement.style.transform = `scale(${pageScale})`;
+        stage.style.width = (PAGE_WIDTH * pageScale) + "px";
+        stage.style.height = (PAGE_HEIGHT * pageScale) + "px";
+    });
+}
+
+function addPage() {
+    recordHistory();
+
+    const newStage = createPageStage();
+    const stages = getPageStages();
+    const currentStage = stages[activePageIndex];
+
+    if (currentStage && currentStage.nextSibling) {
+        pagesContainer.insertBefore(newStage, currentStage.nextSibling);
+    } else {
+        pagesContainer.appendChild(newStage);
+    }
+
+    setActivePage(newStage);
+    selectElement(null);
+    updatePageScale();
+
+    requestAnimationFrame(() => {
+        newStage.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+}
+
+function deleteActivePage() {
+    const stages = getPageStages();
+
+    if (stages.length <= 1) {
+        return;
+    }
+
+    recordHistory();
+
+    const deletingIndex = activePageIndex;
+    stages[deletingIndex].remove();
+    selectedElement = null;
+    lastTextRange = null;
+    lastRangeEditable = null;
+
+    setActivePage(Math.min(deletingIndex, getPageStages().length - 1));
+    updatePageScale();
+}
+
+window.addEventListener("resize", updatePageScale);
+requestAnimationFrame(updatePageScale);
+
+/* =========================
+   Undo / Redo
+========================= */
+
+function captureEditorState() {
+    const clone = pagesContainer.cloneNode(true);
+
+    clone.querySelectorAll(".report-element").forEach(element => {
+        element.classList.remove("selected", "dragging", "resisting");
+        delete element.dataset.directDragBound;
+    });
+
+    clone.querySelectorAll(".report-page-stage").forEach(stage => {
+        stage.classList.remove("active-page-stage");
+    });
+
+    clone.querySelectorAll("[data-drag-bound], [data-resize-bound]").forEach(node => {
+        delete node.dataset.dragBound;
+        delete node.dataset.resizeBound;
+    });
+
+    return {
+        html: clone.innerHTML,
+        highestZ,
+        spawnCount,
+        activePageIndex
+    };
+}
+
+function sameState(a, b) {
+    return Boolean(a && b && a.html === b.html);
+}
+
+function updateHistoryButtons() {
+    if (undoButton) {
+        undoButton.disabled = undoStack.length === 0;
+    }
+
+    if (redoButton) {
+        redoButton.disabled = redoStack.length === 0;
+    }
+}
+
+function recordHistory() {
+    if (historyRestoring) {
+        return;
+    }
+
+    const state = captureEditorState();
+    const last = undoStack[undoStack.length - 1];
+
+    if (!sameState(last, state)) {
+        undoStack.push(state);
+
+        if (undoStack.length > MAX_HISTORY) {
+            undoStack.shift();
+        }
+    }
+
+    redoStack.length = 0;
+    updateHistoryButtons();
+}
+
+function restoreEditorState(state) {
+    if (!state) {
+        return;
+    }
+
+    historyRestoring = true;
+    selectedElement = null;
+
+    pagesContainer.innerHTML = state.html;
+    highestZ = state.highestZ || 1;
+    spawnCount = state.spawnCount || 0;
+
+    lastTextRange = null;
+    lastRangeEditable = null;
+    lastTextHistoryAt = 0;
+    lastTextHistoryTarget = null;
+
+    setActivePage(state.activePageIndex || 0);
+    bindAllElements();
+    updatePageScale();
+
+    historyRestoring = false;
+    selectElement(null);
+    updateHistoryButtons();
+}
+
+function undoEditor() {
+    if (undoStack.length === 0) {
+        return;
+    }
+
+    redoStack.push(captureEditorState());
+    restoreEditorState(undoStack.pop());
+}
+
+function redoEditor() {
+    if (redoStack.length === 0) {
+        return;
+    }
+
+    undoStack.push(captureEditorState());
+    restoreEditorState(redoStack.pop());
+}
+
+function recordTextHistory(editable) {
+    const now = Date.now();
+
+    if (
+        lastTextHistoryTarget !== editable ||
+        now - lastTextHistoryAt > TEXT_HISTORY_INTERVAL
+    ) {
+        recordHistory();
+    }
+
+    lastTextHistoryTarget = editable;
+    lastTextHistoryAt = now;
+}
+
+document.addEventListener("keydown", function(event) {
+    const target = event.target;
+    const targetIsFormField =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement;
+
+    const editable =
+        target instanceof Element
+            ? target.closest(".editable-text")
+            : null;
+
+    const inReportText = Boolean(editable);
+    const selection = window.getSelection();
+    const hasTextSelection = Boolean(
+        inReportText &&
+        selection &&
+        selection.rangeCount > 0 &&
+        !selection.getRangeAt(0).collapsed
+    );
+
+    const modifier = event.ctrlKey || event.metaKey;
+    const key = event.key.toLowerCase();
+
+    /* -------------------------
+       Undo / Redo
+    ------------------------- */
+    if (modifier && key === "z" && !event.shiftKey) {
+        if (!targetIsFormField || inReportText) {
+            event.preventDefault();
+            undoEditor();
+        }
+        return;
+    }
+
+    if (modifier && (key === "y" || (key === "z" && event.shiftKey))) {
+        if (!targetIsFormField || inReportText) {
+            event.preventDefault();
+            redoEditor();
+        }
+        return;
+    }
+
+    /* -------------------------
+       テキスト装飾
+       選択文字がある場合だけ奪う
+    ------------------------- */
+    if (modifier && hasTextSelection && key === "b") {
+        event.preventDefault();
+        rememberCurrentTextSelection();
+        toggleBold();
+        return;
+    }
+
+    if (modifier && hasTextSelection && key === "u") {
+        event.preventDefault();
+        rememberCurrentTextSelection();
+        toggleUnderline();
+        return;
+    }
+
+    /* -------------------------
+       フォームや文章入力中は、
+       コピー/貼り付け等をブラウザ標準に任せる
+    ------------------------- */
+    if (targetIsFormField || inReportText) {
+        return;
+    }
+
+    /* -------------------------
+       オブジェクト操作
+    ------------------------- */
+    if (modifier && key === "c") {
+        if (selectedElement) {
+            event.preventDefault();
+            copySelectedElementToClipboard();
+        }
+        return;
+    }
+
+    if (modifier && key === "x") {
+        if (selectedElement) {
+            event.preventDefault();
+            cutSelectedElement();
+        }
+        return;
+    }
+
+    if (modifier && key === "v") {
+        if (elementClipboard) {
+            event.preventDefault();
+            pasteElementFromClipboard();
+        }
+        return;
+    }
+
+    if (modifier && key === "s") {
+        event.preventDefault();
+        document.querySelector(".work-form").requestSubmit();
+        return;
+    }
+
+    if ((event.key === "Delete" || event.key === "Backspace") && selectedElement) {
+        event.preventDefault();
+        deleteElement();
+        return;
+    }
+
+    /* 矢印キーで微調整。Shift併用で10px移動 */
+    if (selectedElement && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+        event.preventDefault();
+
+        const amount = event.shiftKey ? 10 : 1;
+        let dx = 0;
+        let dy = 0;
+
+        if (event.key === "ArrowLeft") dx = -amount;
+        if (event.key === "ArrowRight") dx = amount;
+        if (event.key === "ArrowUp") dy = -amount;
+        if (event.key === "ArrowDown") dy = amount;
+
+        nudgeSelectedElement(dx, dy);
+    }
+});
+
+updateHistoryButtons();
+
+/* =========================
+   要素選択・文字選択保持
+========================= */
+
+function selectElement(element) {
+    pagesContainer.querySelectorAll(".report-element").forEach(el => {
+        el.classList.remove("selected");
+    });
+
+    selectedElement = element;
+
+    if (element) {
+        setActivePage(element.closest(".report-page-stage"));
+        element.classList.add("selected");
+    }
+
+    syncShapeColorControl();
+}
+
+pagesContainer.addEventListener("pointerdown", function(event) {
+    const clickedPage = event.target.closest(".report-page");
+
+    if (!clickedPage || !pagesContainer.contains(clickedPage)) {
+        return;
+    }
+
+    setActivePage(clickedPage.closest(".report-page-stage"));
+
+    if (event.target === clickedPage) {
+        selectElement(null);
+    }
+});
+
+document.addEventListener("selectionchange", function() {
+    const selection = window.getSelection();
+
+    if (!selection || selection.rangeCount === 0) {
+        return;
+    }
+
+    const range = selection.getRangeAt(0);
+    let node = range.commonAncestorContainer;
+
+    if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+    }
+
+    if (!(node instanceof Element)) {
+        return;
+    }
+
+    const editable = node.closest(".editable-text");
+
+    if (!editable || !pagesContainer.contains(editable)) {
+        return;
+    }
+
+    lastTextRange = range.cloneRange();
+    lastRangeEditable = editable;
+
+    const element = editable.closest(".report-element");
+    if (element) {
+        selectElement(element);
+    }
+});
+
+function getActiveTextRange() {
+    if (!lastTextRange || !lastRangeEditable || !page.contains(lastRangeEditable)) {
+        return null;
+    }
+
+    if (selectedElement && !selectedElement.contains(lastRangeEditable)) {
+        return null;
+    }
+
+    return lastTextRange.cloneRange();
+}
+
+function setSavedRange(range, editable) {
+    const selection = window.getSelection();
+
+    if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    lastTextRange = range.cloneRange();
+    lastRangeEditable = editable;
+}
+
+/* =========================
+   共通要素の生成・再バインド
+========================= */
+
+function createBaseElement(type) {
+    recordHistory();
+
+    const element = document.createElement("div");
+    element.className = "report-element";
+    element.dataset.type = type;
+
+    const offset = (spawnCount % 8) * 22;
+    spawnCount += 1;
+
+    element.style.left = (60 + offset) + "px";
+    element.style.top = (70 + offset) + "px";
+    element.style.width = "300px";
+    element.style.height = "100px";
+    element.style.zIndex = ++highestZ;
+
+    const handle = document.createElement("div");
+    handle.className = "drag-handle";
+    handle.textContent = "移動";
+    element.appendChild(handle);
+
+    page.appendChild(element);
+    bindElement(element);
+    constrainElementToPage(element);
+    selectElement(element);
+
+    return element;
+}
+
+function ensureImageResizeHandle(element) {
+    if (element.dataset.type !== "image") {
+        return null;
+    }
+
+    let handle = element.querySelector(".image-resize-handle");
+
+    if (!handle) {
+        handle = document.createElement("div");
+        handle.className = "image-resize-handle";
+        handle.title = "ドラッグで画像サイズを変更（Shiftで縦横比を解除）";
+        element.appendChild(handle);
+    }
+
+    return handle;
+}
+
+function bindElement(element) {
+    if (boundElements.has(element)) {
+        return;
+    }
+
+    boundElements.add(element);
+
+    let dragHandle = element.querySelector(".drag-handle");
+
+    if (!dragHandle) {
+        dragHandle = document.createElement("div");
+        dragHandle.className = "drag-handle";
+        dragHandle.textContent = "移動";
+        element.prepend(dragHandle);
+    }
+
+    element.addEventListener("pointerdown", function(event) {
+        event.stopPropagation();
+        selectElement(element);
+
+        /* CSSのネイティブresizeを使う要素でもUndoの起点を残す */
+        if (element.dataset.type !== "image") {
+            const rect = element.getBoundingClientRect();
+            const resizeArea = 18;
+
+            if (
+                event.clientX >= rect.right - resizeArea &&
+                event.clientY >= rect.bottom - resizeArea
+            ) {
+                recordHistory();
+            }
+        }
+    });
+
+    setupDrag(element, dragHandle);
+    setupBoundsObserver(element);
+
+    const editable = element.querySelector(".editable-text");
+    if (editable) {
+        bindEditable(editable);
+    }
+
+    if (element.dataset.type === "image") {
+        const resizeHandle = ensureImageResizeHandle(element);
+        setupImageResize(element, resizeHandle);
+    }
+}
+
+function bindEditable(editable) {
+    if (boundEditables.has(editable)) {
+        return;
+    }
+
+    boundEditables.add(editable);
+
+    editable.addEventListener("beforeinput", function() {
+        recordTextHistory(editable);
+    });
+
+    editable.addEventListener("paste", function() {
+        recordTextHistory(editable);
+    });
+
+    editable.addEventListener("focus", function() {
+        const element = editable.closest(".report-element");
+        if (element) {
+            selectElement(element);
+        }
+    });
+}
+
+function bindAllElements() {
+    pagesContainer.querySelectorAll(".report-element").forEach(bindElement);
+}
+
+/* =========================
+   テキスト・見出し
+========================= */
+
+function addText() {
+    const element = createBaseElement("text");
+    const text = document.createElement("div");
+
+    text.className = "editable-text";
+    text.contentEditable = "true";
+    text.textContent = "ここに文章を入力してください。";
+    text.style.fontSize = "16px";
+
+    element.appendChild(text);
+    bindEditable(text);
+    text.focus();
+}
+
+function addHeading(level) {
+    const settings = {
+        1: { size: 32, height: 84, label: "見出し1" },
+        2: { size: 26, height: 76, label: "見出し2" },
+        3: { size: 21, height: 68, label: "見出し3" }
+    };
+
+    const setting = settings[level] || settings[1];
+    const element = createBaseElement("heading");
+
+    element.dataset.headingLevel = String(level || 1);
+    element.style.height = setting.height + "px";
+
+    const text = document.createElement("div");
+    text.className = "editable-text";
+    text.contentEditable = "true";
+    text.textContent = setting.label;
+    text.style.fontSize = setting.size + "px";
+    text.style.fontWeight = "bold";
+
+    element.appendChild(text);
+    bindEditable(text);
+    text.focus();
+}
+
+/* =========================
+   画像読み込み
+========================= */
+
+function setImageMessage(message, isError = false) {
+    if (!imageMessage) {
+        return;
+    }
+
+    imageMessage.textContent = message;
+    imageMessage.classList.toggle("error-message", isError);
+}
+
+function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error("ファイルを読み込めませんでした。"));
+        reader.readAsDataURL(file);
+    });
+}
+
+function decodeImageFromFile(file) {
+    return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const image = new Image();
+
+        function cleanup() {
+            URL.revokeObjectURL(objectUrl);
+        }
+
+        image.onload = function() {
+            cleanup();
+            resolve(image);
+        };
+
+        image.onerror = function() {
+            cleanup();
+            reject(new Error("このブラウザでは画像をデコードできませんでした。"));
+        };
+
+        image.src = objectUrl;
+    });
+}
+
+function canvasToDataURL(canvas, mimeType, quality) {
+    try {
+        return canvas.toDataURL(mimeType, quality);
+    } catch (error) {
+        return null;
+    }
+}
+
+async function normalizeRasterImage(file, decodedImage) {
+    const sourceWidth = decodedImage.naturalWidth || decodedImage.width;
+    const sourceHeight = decodedImage.naturalHeight || decodedImage.height;
+
+    if (!sourceWidth || !sourceHeight) {
+        throw new Error("画像サイズを取得できませんでした。");
+    }
+
+    const scale = Math.min(
+        1,
+        MAX_STORED_IMAGE_EDGE / Math.max(sourceWidth, sourceHeight)
+    );
+
+    const width = Math.max(1, Math.round(sourceWidth * scale));
+    const height = Math.max(1, Math.round(sourceHeight * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+        throw new Error("画像変換用Canvasを利用できませんでした。");
+    }
+
+    context.drawImage(decodedImage, 0, 0, width, height);
+
+    const isJpeg = /jpe?g/i.test(file.type) || /\.jpe?g$/i.test(file.name);
+    const isWebp = /webp/i.test(file.type) || /\.webp$/i.test(file.name);
+    const outputType = isJpeg ? "image/jpeg" : (isWebp ? "image/webp" : "image/png");
+    const dataUrl = canvasToDataURL(canvas, outputType, 0.9);
+
+    if (!dataUrl || dataUrl === "data:,") {
+        throw new Error("画像の変換に失敗しました。");
+    }
+
+    return {
+        src: dataUrl,
+        width: sourceWidth,
+        height: sourceHeight
+    };
+}
+
+async function convertImageOnServer(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await fetch("/api/images/convert", {
+        method: "POST",
+        body: formData
+    });
+
+    let data = {};
+
+    try {
+        data = await response.json();
+    } catch (error) {
+        throw new Error("サーバー側の画像変換結果を読み取れませんでした。");
+    }
+
+    if (!response.ok || !data.src) {
+        throw new Error(data.error || "サーバー側でも画像を変換できませんでした。");
+    }
+
+    return data;
+}
+
+function decodeImageSource(src) {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+
+        image.onload = () => {
+            resolve({
+                width: image.naturalWidth || image.width,
+                height: image.naturalHeight || image.height
+            });
+        };
+
+        image.onerror = () => {
+            reject(new Error("変換後の画像をブラウザで表示できませんでした。"));
+        };
+
+        image.src = src;
+    });
+}
+
+async function prepareImageFile(file) {
+    /*
+     * 画像本体をBase64としてcontent_jsonへ保持すると、作品保存時の
+     * POSTデータが巨大化する。そのため画像は必ずFlask側へ送り、
+     * static/uploadsへ保存されたURLだけをエディタ内で保持する。
+     */
+    const converted = await convertImageOnServer(file);
+    const decoded = await decodeImageSource(converted.src);
+
+    return {
+        src: converted.src,
+        width: converted.width || decoded.width,
+        height: converted.height || decoded.height
+    };
+}
+
+function selectImage() {
+    imageInput.click();
+}
+
+imageInput.addEventListener("change", async function() {
+    const file = this.files[0];
+    this.value = "";
+
+    if (!file) {
+        return;
+    }
+
+    setImageMessage(`「${file.name}」を読み込んでいます…`);
+
+    try {
+        const prepared = await prepareImageFile(file);
+        const element = createBaseElement("image");
+        element.classList.add("report-image");
+
+        const maxWidth = 420;
+        const maxHeight = 320;
+        const ratio = prepared.width / prepared.height || 1;
+
+        let width = Math.min(maxWidth, prepared.width || maxWidth);
+        let height = width / ratio;
+
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * ratio;
+        }
+
+        width = Math.max(80, Math.min(width, PAGE_WIDTH));
+        height = Math.max(60, Math.min(height, PAGE_HEIGHT));
+
+        element.style.width = Math.round(width) + "px";
+        element.style.height = Math.round(height) + "px";
+        element.dataset.aspectRatio = String(ratio);
+
+        const image = document.createElement("img");
+        image.src = prepared.src;
+        image.alt = file.name;
+        image.draggable = false;
+        element.appendChild(image);
+
+        constrainElementToPage(element);
+        setImageMessage(`「${file.name}」を追加しました。`);
+    } catch (error) {
+        console.error(error);
+        setImageMessage(
+            `「${file.name}」を読み込めませんでした。${error.message || "画像形式を確認してください。"}`,
+            true
+        );
+    }
+});
+
+/* =========================
+   画像サイズ変更
+========================= */
+
+function setupImageResize(element, handle) {
+    if (!handle || handle.dataset.resizeBound === "1") {
+        return;
+    }
+
+    handle.dataset.resizeBound = "1";
+
+    handle.addEventListener("pointerdown", function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        selectElement(element);
+
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const startWidth = element.offsetWidth;
+        const startHeight = element.offsetHeight;
+        const ratio =
+            Number(element.dataset.aspectRatio) ||
+            (startWidth / Math.max(1, startHeight));
+
+        let historyRecorded = false;
+
+        function move(moveEvent) {
+            let deltaX = (moveEvent.clientX - startX) / pageScale;
+            let deltaY = (moveEvent.clientY - startY) / pageScale;
+
+            if (!historyRecorded && (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1)) {
+                recordHistory();
+                historyRecorded = true;
+            }
+
+            const left = parseFloat(element.style.left) || 0;
+            const top = parseFloat(element.style.top) || 0;
+            const maxWidth = Math.max(80, PAGE_WIDTH - left);
+            const maxHeight = Math.max(60, PAGE_HEIGHT - top);
+
+            let width;
+            let height;
+
+            if (moveEvent.shiftKey) {
+                width = Math.max(80, Math.min(startWidth + deltaX, maxWidth));
+                height = Math.max(60, Math.min(startHeight + deltaY, maxHeight));
+            } else {
+                const widthFromPointer = Math.max(80, startWidth + deltaX);
+                const heightFromPointer = Math.max(60, startHeight + deltaY);
+
+                width = Math.max(
+                    widthFromPointer,
+                    heightFromPointer * ratio
+                );
+                height = width / ratio;
+
+                if (width > maxWidth) {
+                    width = maxWidth;
+                    height = width / ratio;
+                }
+
+                if (height > maxHeight) {
+                    height = maxHeight;
+                    width = height * ratio;
+                }
+            }
+
+            element.style.width = Math.round(width) + "px";
+            element.style.height = Math.round(height) + "px";
+            constrainElementToPage(element);
+        }
+
+        function end() {
+            document.removeEventListener("pointermove", move);
+            document.removeEventListener("pointerup", end);
+            document.removeEventListener("pointercancel", end);
+        }
+
+        document.addEventListener("pointermove", move);
+        document.addEventListener("pointerup", end);
+        document.addEventListener("pointercancel", end);
+    });
+}
+
+/* =========================
+   図形・URL
+========================= */
+
+const SHAPE_SETTINGS = {
+    rectangle: {
+        label: "四角",
+        width: 200,
+        height: 120
+    },
+    triangle: {
+        label: "三角",
+        width: 180,
+        height: 150
+    },
+    circle: {
+        label: "丸",
+        width: 150,
+        height: 150
+    },
+    arrow: {
+        label: "矢印",
+        width: 240,
+        height: 110
+    }
+};
+
+function toggleShapeMenu(event) {
+    event.stopPropagation();
+
+    const menu = document.getElementById("shape-menu");
+    const button = document.getElementById("shape-picker-button");
+    const willOpen = menu.hidden;
+
+    menu.hidden = !willOpen;
+    button.setAttribute("aria-expanded", String(willOpen));
+}
+
+function closeShapeMenu() {
+    const menu = document.getElementById("shape-menu");
+    const button = document.getElementById("shape-picker-button");
+
+    if (!menu || !button) {
+        return;
+    }
+
+    menu.hidden = true;
+    button.setAttribute("aria-expanded", "false");
+}
+
+document.addEventListener("pointerdown", function(event) {
+    if (!event.target.closest(".shape-picker")) {
+        closeShapeMenu();
+    }
+});
+
+function addShape(kind = "rectangle") {
+    const setting = SHAPE_SETTINGS[kind] || SHAPE_SETTINGS.rectangle;
+    const element = createBaseElement("shape");
+
+    element.dataset.shapeKind = kind;
+    element.style.width = setting.width + "px";
+    element.style.height = setting.height + "px";
+
+    const shape = document.createElement("div");
+    shape.className = `shape-content shape-${kind}`;
+    shape.setAttribute("aria-label", setting.label);
+
+    const shapeColorInput = document.getElementById("shape-color");
+    shape.style.background = shapeColorInput?.value || "#d6bc74";
+
+    element.appendChild(shape);
+    constrainElementToPage(element);
+    closeShapeMenu();
+}
+
+function addLink() {
+    const url = prompt("URLを入力してください");
+
+    if (!url) {
+        return;
+    }
+
+    const text = prompt("表示する文字を入力してください", url);
+    const element = createBaseElement("link");
+    element.dataset.url = url;
+
+    const content = document.createElement("div");
+    content.className = "editable-text";
+    content.contentEditable = "true";
+    content.textContent = text || url;
+
+    element.classList.add("link-element");
+    element.appendChild(content);
+    bindEditable(content);
+}
+
+/* =========================
+   オブジェクト同士の抵抗
+========================= */
+
+function getElementBox(target, left = null, top = null) {
+    const x = left === null ? target.offsetLeft : left;
+    const y = top === null ? target.offsetTop : top;
+
+    return {
+        left: x,
+        top: y,
+        right: x + target.offsetWidth,
+        bottom: y + target.offsetHeight,
+        width: target.offsetWidth,
+        height: target.offsetHeight
+    };
+}
+
+function isOverlapping(a, b) {
+    return (
+        a.left < b.right &&
+        a.right > b.left &&
+        a.top < b.bottom &&
+        a.bottom > b.top
+    );
+}
+
+function findCollisionBarrier(element, currentLeft, currentTop, nextLeft, nextTop, ignoredTargets) {
+    const width = element.offsetWidth;
+    const height = element.offsetHeight;
+    const dx = nextLeft - currentLeft;
+    const dy = nextTop - currentTop;
+
+    if (dx === 0 && dy === 0) {
+        return null;
+    }
+
+    const others = [...page.querySelectorAll(".report-element")]
+        .filter(target => target !== element && !ignoredTargets.has(target));
+
+    let best = null;
+
+    if (Math.abs(dx) >= Math.abs(dy) && dx !== 0) {
+        for (const target of others) {
+            const box = getElementBox(target);
+            const verticalOverlap =
+                nextTop < box.bottom + OBJECT_GAP &&
+                nextTop + height > box.top - OBJECT_GAP;
+
+            if (!verticalOverlap) {
+                continue;
+            }
+
+            if (dx > 0) {
+                const boundary = box.left - OBJECT_GAP;
+                const currentRight = currentLeft + width;
+                const nextRight = nextLeft + width;
+
+                if (currentRight <= boundary && nextRight > boundary) {
+                    const blockedLeft = boundary - width;
+                    const distance = blockedLeft - currentLeft;
+
+                    if (!best || distance < best.distance) {
+                        best = {
+                            axis: "x",
+                            direction: 1,
+                            target,
+                            blockedLeft,
+                            blockedTop: nextTop,
+                            distance
+                        };
+                    }
+                }
+            } else {
+                const boundary = box.right + OBJECT_GAP;
+
+                if (currentLeft >= boundary && nextLeft < boundary) {
+                    const blockedLeft = boundary;
+                    const distance = currentLeft - blockedLeft;
+
+                    if (!best || distance < best.distance) {
+                        best = {
+                            axis: "x",
+                            direction: -1,
+                            target,
+                            blockedLeft,
+                            blockedTop: nextTop,
+                            distance
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    if (!best && dy !== 0) {
+        for (const target of others) {
+            const box = getElementBox(target);
+            const horizontalOverlap =
+                nextLeft < box.right + OBJECT_GAP &&
+                nextLeft + width > box.left - OBJECT_GAP;
+
+            if (!horizontalOverlap) {
+                continue;
+            }
+
+            if (dy > 0) {
+                const boundary = box.top - OBJECT_GAP;
+                const currentBottom = currentTop + height;
+                const nextBottom = nextTop + height;
+
+                if (currentBottom <= boundary && nextBottom > boundary) {
+                    const blockedTop = boundary - height;
+                    const distance = blockedTop - currentTop;
+
+                    if (!best || distance < best.distance) {
+                        best = {
+                            axis: "y",
+                            direction: 1,
+                            target,
+                            blockedLeft: nextLeft,
+                            blockedTop,
+                            distance
+                        };
+                    }
+                }
+            } else {
+                const boundary = box.bottom + OBJECT_GAP;
+
+                if (currentTop >= boundary && nextTop < boundary) {
+                    const blockedTop = boundary;
+                    const distance = currentTop - blockedTop;
+
+                    if (!best || distance < best.distance) {
+                        best = {
+                            axis: "y",
+                            direction: -1,
+                            target,
+                            blockedLeft: nextLeft,
+                            blockedTop,
+                            distance
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    return best;
+}
+
+/* =========================
+   移動
+========================= */
+
+function setupDrag(element, handle) {
+    function beginDrag(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        selectElement(element);
+        element.classList.add("dragging");
+
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const startLeft = parseFloat(element.style.left) || 0;
+        const startTop = parseFloat(element.style.top) || 0;
+
+        let barrier = null;
+        let historyRecorded = false;
+        const ignoredTargets = new Set();
+
+        function clearIgnoredTargets(left, top) {
+            const movingBox = getElementBox(element, left, top);
+
+            for (const target of [...ignoredTargets]) {
+                const targetBox = getElementBox(target);
+
+                if (!isOverlapping(movingBox, targetBox)) {
+                    ignoredTargets.delete(target);
+                }
+            }
+        }
+
+        function move(moveEvent) {
+            let intendedLeft =
+                startLeft + (moveEvent.clientX - startX) / pageScale;
+            let intendedTop =
+                startTop + (moveEvent.clientY - startY) / pageScale;
+
+            if (
+                !historyRecorded &&
+                (Math.abs(intendedLeft - startLeft) > 1 || Math.abs(intendedTop - startTop) > 1)
+            ) {
+                recordHistory();
+                historyRecorded = true;
+            }
+
+            const maxLeft = Math.max(0, PAGE_WIDTH - element.offsetWidth);
+            const maxTop = Math.max(0, PAGE_HEIGHT - element.offsetHeight);
+
+            intendedLeft = Math.max(0, Math.min(intendedLeft, maxLeft));
+            intendedTop = Math.max(0, Math.min(intendedTop, maxTop));
+
+            clearIgnoredTargets(intendedLeft, intendedTop);
+
+            if (barrier) {
+                const targetBox = getElementBox(barrier.target);
+
+                if (barrier.axis === "x") {
+                    const stillFacingTarget =
+                        intendedTop < targetBox.bottom + OBJECT_GAP &&
+                        intendedTop + element.offsetHeight > targetBox.top - OBJECT_GAP;
+
+                    if (!stillFacingTarget) {
+                        barrier = null;
+                        element.classList.remove("resisting");
+                    } else {
+                        const pushed =
+                            (moveEvent.clientX - barrier.pointerStart) * barrier.direction;
+
+                        if (pushed < RESISTANCE_DISTANCE) {
+                            element.style.left = barrier.blockedLeft + "px";
+                            element.style.top = intendedTop + "px";
+                            constrainElementToPage(element);
+                            return;
+                        }
+
+                        ignoredTargets.add(barrier.target);
+                        barrier = null;
+                        element.classList.remove("resisting");
+                    }
+                } else {
+                    const stillFacingTarget =
+                        intendedLeft < targetBox.right + OBJECT_GAP &&
+                        intendedLeft + element.offsetWidth > targetBox.left - OBJECT_GAP;
+
+                    if (!stillFacingTarget) {
+                        barrier = null;
+                        element.classList.remove("resisting");
+                    } else {
+                        const pushed =
+                            (moveEvent.clientY - barrier.pointerStart) * barrier.direction;
+
+                        if (pushed < RESISTANCE_DISTANCE) {
+                            element.style.left = intendedLeft + "px";
+                            element.style.top = barrier.blockedTop + "px";
+                            constrainElementToPage(element);
+                            return;
+                        }
+
+                        ignoredTargets.add(barrier.target);
+                        barrier = null;
+                        element.classList.remove("resisting");
+                    }
+                }
+            }
+
+            const currentLeft = parseFloat(element.style.left) || 0;
+            const currentTop = parseFloat(element.style.top) || 0;
+
+            const hit = findCollisionBarrier(
+                element,
+                currentLeft,
+                currentTop,
+                intendedLeft,
+                intendedTop,
+                ignoredTargets
+            );
+
+            if (hit) {
+                barrier = hit;
+                barrier.pointerStart = hit.axis === "x"
+                    ? moveEvent.clientX
+                    : moveEvent.clientY;
+
+                element.classList.add("resisting");
+                element.style.left = hit.blockedLeft + "px";
+                element.style.top = hit.blockedTop + "px";
+                constrainElementToPage(element);
+                return;
+            }
+
+            element.classList.remove("resisting");
+            element.style.left = intendedLeft + "px";
+            element.style.top = intendedTop + "px";
+            constrainElementToPage(element);
+        }
+
+        function end() {
+            element.classList.remove("dragging", "resisting");
+            document.removeEventListener("pointermove", move);
+            document.removeEventListener("pointerup", end);
+            document.removeEventListener("pointercancel", end);
+        }
+
+        document.addEventListener("pointermove", move);
+        document.addEventListener("pointerup", end);
+        document.addEventListener("pointercancel", end);
+    }
+
+    if (handle && handle.dataset.dragBound !== "1") {
+        handle.dataset.dragBound = "1";
+        handle.addEventListener("pointerdown", beginDrag);
+    }
+
+    if (element.dataset.directDragBound === "1") {
+        return;
+    }
+
+    element.dataset.directDragBound = "1";
+
+    element.addEventListener("pointerdown", function(event) {
+        if (event.target.closest(".drag-handle, .image-resize-handle")) {
+            return;
+        }
+
+        if (element.dataset.type !== "image" && element.dataset.type !== "shape") {
+            return;
+        }
+
+        if (element.dataset.type !== "image") {
+            const rect = element.getBoundingClientRect();
+            const resizeArea = 18;
+            const isResizeCorner =
+                event.clientX >= rect.right - resizeArea &&
+                event.clientY >= rect.bottom - resizeArea;
+
+            if (isResizeCorner) {
+                return;
+            }
+        }
+
+        beginDrag(event);
+    });
+}
+
+/* =========================
+   用紙内制限
+========================= */
+
+function constrainElementToPage(element) {
+    let left = parseFloat(element.style.left) || 0;
+    let top = parseFloat(element.style.top) || 0;
+    let width = element.offsetWidth;
+    let height = element.offsetHeight;
+
+    if (width > PAGE_WIDTH) {
+        element.style.width = PAGE_WIDTH + "px";
+        width = PAGE_WIDTH;
+    }
+
+    if (height > PAGE_HEIGHT) {
+        element.style.height = PAGE_HEIGHT + "px";
+        height = PAGE_HEIGHT;
+    }
+
+    const availableWidth = Math.max(0, PAGE_WIDTH - left);
+    const availableHeight = Math.max(0, PAGE_HEIGHT - top);
+
+    if (width > availableWidth) {
+        element.style.width = availableWidth + "px";
+        width = availableWidth;
+    }
+
+    if (height > availableHeight) {
+        element.style.height = availableHeight + "px";
+        height = availableHeight;
+    }
+
+    const maxLeft = Math.max(0, PAGE_WIDTH - width);
+    const maxTop = Math.max(0, PAGE_HEIGHT - height);
+
+    left = Math.max(0, Math.min(left, maxLeft));
+    top = Math.max(0, Math.min(top, maxTop));
+
+    element.style.left = left + "px";
+    element.style.top = top + "px";
+}
+
+function setupBoundsObserver(element) {
+    constrainElementToPage(element);
+
+    if (!("ResizeObserver" in window) || boundsObservers.has(element)) {
+        return;
+    }
+
+    let adjusting = false;
+
+    const observer = new ResizeObserver(() => {
+        if (adjusting || historyRestoring) {
+            return;
+        }
+
+        adjusting = true;
+
+        requestAnimationFrame(() => {
+            constrainElementToPage(element);
+            adjusting = false;
+        });
+    });
+
+    observer.observe(element);
+    boundsObservers.set(element, observer);
+}
+
+/* =========================
+   部分文字装飾
+========================= */
+
+function requireSelectedText() {
+    const range = getActiveTextRange();
+
+    if (!range || range.collapsed || !lastRangeEditable) {
+        return null;
+    }
+
+    return {
+        range,
+        editable: lastRangeEditable
+    };
+}
+
+function applyStyleToSelection(property, value) {
+    const selectionData = requireSelectedText();
+
+    if (!selectionData) {
+        return;
+    }
+
+    const { range, editable } = selectionData;
+    recordHistory();
+
+    const wrapper = document.createElement("span");
+    wrapper.style[property] = value;
+
+    const fragment = range.extractContents();
+
+    /*
+     * すでに同じ種類の装飾spanが内側にある場合、親へ色などを指定しても
+     * 内側のstyleが優先される。選択範囲へ新しい値を確実に適用するため、
+     * 同じCSSプロパティだけ内側から取り除く。
+     */
+    if (fragment.querySelectorAll) {
+        fragment.querySelectorAll("[style]").forEach(node => {
+            node.style[property] = "";
+
+            if (!node.getAttribute("style")?.trim()) {
+                node.removeAttribute("style");
+            }
+        });
+    }
+
+    wrapper.appendChild(fragment);
+    range.insertNode(wrapper);
+
+    const newRange = document.createRange();
+    newRange.selectNodeContents(wrapper);
+    setSavedRange(newRange, editable);
+}
+
+function selectionComputedStyle(property) {
+    const selectionData = requireSelectedText();
+
+    if (!selectionData) {
+        return "";
+    }
+
+    let node = selectionData.range.startContainer;
+
+    if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+    }
+
+    if (!(node instanceof Element)) {
+        return "";
+    }
+
+    return getComputedStyle(node)[property] || "";
+}
+
+function changeFontSize() {
+    const value = document.getElementById("font-size").value;
+    applyStyleToSelection("fontSize", value + "px");
+}
+
+function changeFont() {
+    const value = document.getElementById("font-family").value;
+    applyStyleToSelection("fontFamily", value);
+}
+
+function changeColor() {
+    const value = document.getElementById("font-color").value;
+    applyStyleToSelection("color", value);
+}
+
+function toggleBold() {
+    const current = selectionComputedStyle("fontWeight");
+    const numeric = parseInt(current, 10);
+    const isBold = current === "bold" || (!Number.isNaN(numeric) && numeric >= 600);
+
+    applyStyleToSelection("fontWeight", isBold ? "normal" : "bold");
+}
+
+function toggleTextDecorationLine(lineName) {
+    const current = selectionComputedStyle("textDecorationLine");
+    const lines = new Set(
+        current
+            .split(/\s+/)
+            .filter(line => line && line !== "none")
+    );
+
+    if (lines.has(lineName)) {
+        lines.delete(lineName);
+    } else {
+        lines.add(lineName);
+    }
+
+    applyStyleToSelection(
+        "textDecorationLine",
+        lines.size > 0 ? [...lines].join(" ") : "none"
+    );
+}
+
+function toggleUnderline() {
+    toggleTextDecorationLine("underline");
+}
+
+function toggleStrikeThrough() {
+    toggleTextDecorationLine("line-through");
+}
+
+/* 配置は文字の一部分ではなく、テキストボックス全体の段落属性として扱う */
+function setAlign(align) {
+    if (!selectedElement) {
+        return;
+    }
+
+    const editable = selectedElement.querySelector(".editable-text");
+
+    if (!editable) {
+        return;
+    }
+
+    recordHistory();
+    editable.style.textAlign = align;
+}
+
+/* ツールバー操作で文字選択を失わない */
+function rememberCurrentTextSelection() {
+    const selection = window.getSelection();
+
+    if (!selection || selection.rangeCount === 0) {
+        return;
+    }
+
+    const range = selection.getRangeAt(0);
+    let node = range.commonAncestorContainer;
+
+    if (node.nodeType === Node.TEXT_NODE) {
+        node = node.parentElement;
+    }
+
+    if (!(node instanceof Element)) {
+        return;
+    }
+
+    const editable = node.closest(".editable-text");
+
+    if (!editable || !pagesContainer.contains(editable)) {
+        return;
+    }
+
+    lastTextRange = range.cloneRange();
+    lastRangeEditable = editable;
+}
+
+document.querySelectorAll(".text-style-button").forEach(button => {
+    button.addEventListener("pointerdown", function(event) {
+        rememberCurrentTextSelection();
+        event.preventDefault();
+    });
+});
+
+/*
+ * type=color はネイティブのカラーピッカーへフォーカスが移るため、
+ * 開く直前に選択範囲を明示的に保存しておく。
+ */
+const fontColorInput = document.getElementById("font-color");
+
+fontColorInput.addEventListener("pointerdown", function() {
+    rememberCurrentTextSelection();
+});
+
+fontColorInput.addEventListener("change", function() {
+    changeColor();
+});
+
+/* select操作でも同じ範囲を利用できるように保持する */
+document.getElementById("font-size").addEventListener("pointerdown", rememberCurrentTextSelection);
+document.getElementById("font-family").addEventListener("pointerdown", rememberCurrentTextSelection);
+
+/* =========================
+   図形の色
+========================= */
+
+const shapeColorInput = document.getElementById("shape-color");
+
+function colorToHex(color) {
+    if (!color) {
+        return "#d6bc74";
+    }
+
+    if (color.startsWith("#")) {
+        return color;
+    }
+
+    const match = color.match(/rgba?\((\d+)\D+(\d+)\D+(\d+)/i);
+
+    if (!match) {
+        return "#d6bc74";
+    }
+
+    return "#" + [match[1], match[2], match[3]]
+        .map(value => Number(value).toString(16).padStart(2, "0"))
+        .join("");
+}
+
+function syncShapeColorControl() {
+    if (!shapeColorInput) {
+        return;
+    }
+
+    const isShape = selectedElement?.dataset.type === "shape";
+    shapeColorInput.disabled = !isShape;
+
+    if (!isShape) {
+        return;
+    }
+
+    const shape = selectedElement.querySelector(".shape-content");
+
+    if (shape) {
+        shapeColorInput.value = colorToHex(
+            shape.style.backgroundColor ||
+            shape.style.background ||
+            getComputedStyle(shape).backgroundColor
+        );
+    }
+}
+
+function changeShapeColor() {
+    if (!selectedElement || selectedElement.dataset.type !== "shape") {
+        return;
+    }
+
+    const shape = selectedElement.querySelector(".shape-content");
+
+    if (!shape) {
+        return;
+    }
+
+    recordHistory();
+    shape.style.background = shapeColorInput.value;
+}
+
+if (shapeColorInput) {
+    shapeColorInput.addEventListener("change", changeShapeColor);
+}
+
+/* =========================
+   コピー・削除・重なり順
+========================= */
+
+function cloneElementForPaste(source) {
+    const clone = source.cloneNode(true);
+    clone.classList.remove("selected", "dragging", "resisting");
+
+    clone.querySelectorAll("[data-drag-bound], [data-resize-bound]").forEach(node => {
+        delete node.dataset.dragBound;
+        delete node.dataset.resizeBound;
+    });
+
+    delete clone.dataset.directDragBound;
+    return clone;
+}
+
+function copySelectedElementToClipboard() {
+    if (!selectedElement) {
+        return;
+    }
+
+    elementClipboard = cloneElementForPaste(selectedElement);
+}
+
+function pasteElementFromClipboard() {
+    if (!elementClipboard) {
+        return;
+    }
+
+    recordHistory();
+
+    const clone = cloneElementForPaste(elementClipboard);
+    const sourceLeft = parseFloat(elementClipboard.style.left) || 0;
+    const sourceTop = parseFloat(elementClipboard.style.top) || 0;
+
+    clone.style.left = (sourceLeft + 20) + "px";
+    clone.style.top = (sourceTop + 20) + "px";
+    clone.style.zIndex = ++highestZ;
+
+    page.appendChild(clone);
+    bindElement(clone);
+    constrainElementToPage(clone);
+    selectElement(clone);
+
+    /* 連続Ctrl+Vで少しずつずらす */
+    elementClipboard.style.left = clone.style.left;
+    elementClipboard.style.top = clone.style.top;
+}
+
+function cutSelectedElement() {
+    if (!selectedElement) {
+        return;
+    }
+
+    copySelectedElementToClipboard();
+    deleteElement();
+}
+
+function nudgeSelectedElement(dx, dy) {
+    if (!selectedElement) {
+        return;
+    }
+
+    recordHistory();
+
+    const width = selectedElement.offsetWidth;
+    const height = selectedElement.offsetHeight;
+    const left = parseFloat(selectedElement.style.left) || 0;
+    const top = parseFloat(selectedElement.style.top) || 0;
+
+    selectedElement.style.left = Math.max(
+        0,
+        Math.min(left + dx, PAGE_WIDTH - width)
+    ) + "px";
+
+    selectedElement.style.top = Math.max(
+        0,
+        Math.min(top + dy, PAGE_HEIGHT - height)
+    ) + "px";
+}
+
+function deleteElement() {
+    if (!selectedElement) {
+        return;
+    }
+
+    recordHistory();
+    selectedElement.remove();
+    selectedElement = null;
+    lastTextRange = null;
+    lastRangeEditable = null;
+}
+
+function copyElement() {
+    if (!selectedElement) {
+        return;
+    }
+
+    copySelectedElementToClipboard();
+    pasteElementFromClipboard();
+}
+
+function bringFront() {
+    if (!selectedElement) {
+        return;
+    }
+
+    recordHistory();
+    selectedElement.style.zIndex = ++highestZ;
+}
+
+function sendBack() {
+    if (!selectedElement) {
+        return;
+    }
+
+    recordHistory();
+    selectedElement.style.zIndex = 1;
+}
+
+/* =========================
+   保存
+========================= */
+
+function sanitizeEditableHtml(editable) {
+    const clone = editable.cloneNode(true);
+
+    clone.querySelectorAll("script, style, iframe, object, embed").forEach(node => node.remove());
+
+    clone.querySelectorAll("*").forEach(node => {
+        [...node.attributes].forEach(attribute => {
+            const name = attribute.name.toLowerCase();
+            const value = attribute.value.trim().toLowerCase();
+
+            if (name.startsWith("on")) {
+                node.removeAttribute(attribute.name);
+            }
+
+            if ((name === "href" || name === "src") && value.startsWith("javascript:")) {
+                node.removeAttribute(attribute.name);
+            }
+        });
+    });
+
+    return clone.innerHTML;
+}
+
+function serializeElement(element) {
+    const type = element.dataset.type;
+    const editable = element.querySelector(".editable-text");
+
+    const data = {
+        type,
+        x: parseFloat(element.style.left) || 0,
+        y: parseFloat(element.style.top) || 0,
+        width: element.offsetWidth,
+        height: element.offsetHeight,
+        z: Number(element.style.zIndex) || 1
+    };
+
+    if (element.dataset.headingLevel) {
+        data.headingLevel = Number(element.dataset.headingLevel);
+    }
+
+    if (editable) {
+        data.text = editable.innerText;
+        data.html = sanitizeEditableHtml(editable);
+        data.fontSize = editable.style.fontSize;
+        data.fontFamily = editable.style.fontFamily;
+        data.color = editable.style.color;
+        data.fontWeight = editable.style.fontWeight;
+        data.textDecoration = editable.style.textDecoration;
+        data.textAlign = editable.style.textAlign;
+    }
+
+    if (type === "image") {
+        const image = element.querySelector("img");
+        data.src = image ? image.src : "";
+        data.aspectRatio = Number(element.dataset.aspectRatio) || null;
+    }
+
+    if (type === "shape") {
+        const shape = element.querySelector(".shape-content");
+        data.shapeKind = element.dataset.shapeKind || "rectangle";
+        data.background = shape
+            ? (shape.style.background || getComputedStyle(shape).backgroundColor || "#d6bc74")
+            : "#d6bc74";
+    }
+
+    if (type === "link") {
+        data.url = element.dataset.url;
+    }
+
+    return data;
+}
+
+function serializeReport() {
+    const pages = getPageStages().map(stage => {
+        const pageElement = stage.querySelector(".report-page");
+
+        return {
+            elements: [...pageElement.querySelectorAll(".report-element")]
+                .map(serializeElement)
+        };
+    });
+
+    return {
+        pageWidth: PAGE_WIDTH,
+        pageHeight: PAGE_HEIGHT,
+        pages
+    };
+}
+
+document.querySelector(".work-form").addEventListener("submit", function(event) {
+    const report = serializeReport();
+
+    /*
+     * 古いBase64画像が残った状態で保存すると再び巨大POSTになるため、
+     * 念のため送信前に検出する。
+     */
+    const embeddedImage = report.pages.some(pageData =>
+        pageData.elements.some(item =>
+            item.type === "image" &&
+            typeof item.src === "string" &&
+            item.src.startsWith("data:")
+        )
+    );
+
+    if (embeddedImage) {
+        event.preventDefault();
+        setImageMessage(
+            "古い形式の埋め込み画像が残っています。該当画像を削除して、もう一度追加してから保存してください。",
+            true
+        );
+        return;
+    }
+
+    contentInput.value = JSON.stringify(report);
+});
+
+bindAllElements();
+
+/* =========================
+   保存済み作品を復元
+========================= */
+
+function sanitizeStoredHtml(html) {
+
+    const template =
+        document.createElement("template");
+
+    template.innerHTML =
+        html || "";
+
+    template.content
+        .querySelectorAll(
+            "script, style, iframe, object, embed"
+        )
+        .forEach(node => {
+            node.remove();
+        });
+
+    template.content
+        .querySelectorAll("*")
+        .forEach(node => {
+
+            [...node.attributes]
+                .forEach(attribute => {
+
+                    const name =
+                        attribute.name
+                            .toLowerCase();
+
+                    if (
+                        name.startsWith("on")
+                    ) {
+                        node.removeAttribute(
+                            attribute.name
+                        );
+                    }
+
+                });
+
+        });
+
+    return template.innerHTML;
+}
+
+
+function restoreElementOnPage(pageElement, data) {
+    const element = document.createElement("div");
+    element.className = "report-element";
+    element.dataset.type = data.type;
+
+    element.style.left = (data.x || 0) + "px";
+    element.style.top = (data.y || 0) + "px";
+    element.style.width = (data.width || 100) + "px";
+    element.style.height = (data.height || 40) + "px";
+    element.style.zIndex = data.z || 1;
+
+    highestZ = Math.max(highestZ, Number(data.z) || 1);
+
+    const handle = document.createElement("div");
+    handle.className = "drag-handle";
+    handle.textContent = "移動";
+    element.appendChild(handle);
+
+    if (data.type === "text" || data.type === "heading") {
+        if (data.headingLevel) {
+            element.dataset.headingLevel = data.headingLevel;
+        }
+
+        const editable = document.createElement("div");
+        editable.className = "editable-text";
+        editable.contentEditable = "true";
+
+        if (data.html) {
+            editable.innerHTML = sanitizeStoredHtml(data.html);
+        } else {
+            editable.textContent = data.text || "";
+        }
+
+        if (data.fontSize) editable.style.fontSize = data.fontSize;
+        if (data.fontFamily) editable.style.fontFamily = data.fontFamily;
+        if (data.color) editable.style.color = data.color;
+        if (data.fontWeight) editable.style.fontWeight = data.fontWeight;
+        if (data.textDecoration) editable.style.textDecoration = data.textDecoration;
+        if (data.textAlign) editable.style.textAlign = data.textAlign;
+
+        element.appendChild(editable);
+    } else if (data.type === "image") {
+        element.classList.add("report-image");
+
+        if (data.aspectRatio) {
+            element.dataset.aspectRatio = data.aspectRatio;
+        }
+
+        const image = document.createElement("img");
+        image.src = data.src || "";
+        image.alt = "";
+        image.draggable = false;
+        element.appendChild(image);
+    } else if (data.type === "shape") {
+        const kind = data.shapeKind || "rectangle";
+        element.dataset.shapeKind = kind;
+
+        const shape = document.createElement("div");
+        shape.className = "shape-content shape-" + kind;
+        shape.style.background = data.background || "#d6bc74";
+        element.appendChild(shape);
+    } else if (data.type === "link") {
+        element.classList.add("link-element");
+        element.dataset.url = data.url || "";
+
+        const editable = document.createElement("div");
+        editable.className = "editable-text";
+        editable.contentEditable = "true";
+
+        if (data.html) {
+            editable.innerHTML = sanitizeStoredHtml(data.html);
+        } else {
+            editable.textContent = data.text || data.url || "リンク";
+        }
+
+        element.appendChild(editable);
+    }
+
+    pageElement.appendChild(element);
+    bindElement(element);
+    constrainElementToPage(element);
+}
+
+function normalizeReportPages(report) {
+    if (report && Array.isArray(report.pages) && report.pages.length > 0) {
+        return report.pages.map(pageData => ({
+            elements: Array.isArray(pageData.elements) ? pageData.elements : []
+        }));
+    }
+
+    /* 旧形式の1ページ作品との互換性 */
+    return [{
+        elements: report && Array.isArray(report.elements)
+            ? report.elements
+            : []
+    }];
+}
+
+function restoreSavedReport(report) {
+    historyRestoring = true;
+    pagesContainer.innerHTML = "";
+    highestZ = 1;
+
+    const pageDataList = normalizeReportPages(report);
+    let totalElements = 0;
+
+    pageDataList.forEach(pageData => {
+        const stage = createPageStage();
+        const pageElement = stage.querySelector(".report-page");
+        pagesContainer.appendChild(stage);
+
+        pageData.elements.forEach(data => {
+            restoreElementOnPage(pageElement, data);
+            totalElements += 1;
+        });
+    });
+
+    spawnCount = totalElements;
+    historyRestoring = false;
+
+    setActivePage(0);
+    selectElement(null);
+    undoStack.length = 0;
+    redoStack.length = 0;
+    updateHistoryButtons();
+    updatePageScale();
+}
+
+
+/* 保存された内容を読み込む */
+
+restoreSavedReport(
+    initialReport
+);
+
+requestAnimationFrame(
+    updatePageScale
+);
+
+</script>
+
+</body>
+</html>

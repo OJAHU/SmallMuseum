@@ -1,0 +1,967 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --ink: #2b2118;
+    --brown: #3c2a24;
+    --brown-dark: #1d1412;
+    --gold: #b9974f;
+    --gold-light: #d6bc74;
+    --cream: #fffaf0;
+    --cream-2: #f8efd9;
+    --line: #d6c6a3;
+    --muted: #6b5a46;
+}
+
+body {
+    margin: 0;
+    font-family: "Yu Mincho", "Hiragino Mincho ProN", "Yu Gothic", "Meiryo", serif;
+    color: var(--ink);
+    background:
+        linear-gradient(rgba(255, 253, 247, 0.92), rgba(239, 231, 214, 0.96)),
+        repeating-linear-gradient(
+            90deg,
+            #f7f0e4 0,
+            #f7f0e4 48px,
+            #f1e8d8 48px,
+            #f1e8d8 96px
+        );
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+/* =========================
+   ヘッダー
+========================= */
+
+.museum-header {
+    position: relative;
+    padding: 48px 20px;
+    color: #fff8e8;
+    background:
+        radial-gradient(circle at top, rgba(218, 184, 95, 0.28), transparent 35%),
+        linear-gradient(135deg, #1d1412, #3c2a24 55%, #1a1210);
+    border-bottom: 8px solid var(--gold);
+}
+
+.museum-header::after {
+    content: "";
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    bottom: -17px;
+    height: 28px;
+    background: linear-gradient(90deg, transparent, rgba(185, 151, 79, 0.72), transparent);
+    filter: blur(10px);
+    pointer-events: none;
+}
+
+.header-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.museum-label {
+    margin: 0 0 10px;
+    color: var(--gold-light);
+    font-size: 14px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+.museum-header h1 {
+    margin: 0;
+    font-size: 44px;
+    font-weight: normal;
+    letter-spacing: 0.14em;
+}
+
+.header-text {
+    max-width: 720px;
+    margin: 18px auto 26px;
+    color: #e8dcc5;
+    line-height: 1.8;
+}
+
+.header-nav {
+    display: flex;
+    justify-content: center;
+}
+
+.nav-button {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 999px;
+    background: var(--gold);
+    color: #241914;
+    font-weight: bold;
+    box-shadow: 0 4px 0 #72582b;
+    transition: 0.2s;
+}
+
+.nav-button:hover {
+    transform: translateY(2px);
+    background: #d6b86a;
+    box-shadow: 0 2px 0 #72582b;
+}
+
+/* =========================
+   メインカード
+========================= */
+
+.page-main {
+    max-width: 1180px;
+    margin: 64px auto;
+    padding: 0 28px;
+}
+
+.create-work-card {
+    position: relative;
+    padding: 42px;
+    background: var(--cream);
+    border: 14px solid #d8c29a;
+    outline: 2px solid #8b6f3f;
+    box-shadow: 0 18px 32px rgba(45, 36, 27, 0.18);
+}
+
+.create-work-card::before {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    border: 1px solid rgba(139, 111, 63, 0.4);
+    pointer-events: none;
+}
+
+.card-title-area,
+.report-heading,
+.work-form {
+    position: relative;
+    z-index: 1;
+}
+
+.card-title-area {
+    margin-bottom: 34px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+}
+
+.card-label {
+    margin: 0 0 8px;
+    color: #9b7838;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.card-title-area h2,
+.report-heading h2 {
+    margin: 0;
+    color: #332315;
+    font-size: 32px;
+    font-weight: normal;
+    letter-spacing: 0.1em;
+}
+
+.card-title-area p:last-child,
+.report-heading p:last-child {
+    margin: 12px 0 0;
+    color: var(--muted);
+    line-height: 1.8;
+}
+
+/* =========================
+   基本情報フォーム
+========================= */
+
+.basic-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 26px;
+}
+
+.form-item {
+    margin-bottom: 24px;
+}
+
+.basic-info-grid .form-item {
+    margin-bottom: 0;
+}
+
+.form-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-item label {
+    display: block;
+    margin-bottom: 9px;
+    color: #3d3027;
+    font-weight: bold;
+}
+
+.form-item input[type="text"],
+.form-item textarea,
+.form-item select {
+    width: 100%;
+    padding: 13px 14px;
+    color: #2f2a24;
+    background: #fffdf7;
+    border: 1px solid #cdbb98;
+    border-radius: 9px;
+    font-size: 16px;
+}
+
+.form-item textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.7;
+}
+
+.form-item input[type="text"]:focus,
+.form-item textarea:focus,
+.form-item select:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(185, 151, 79, 0.22);
+}
+
+.error {
+    margin: 7px 0 0;
+    color: #8b1e1e;
+    font-size: 13px;
+}
+
+/* range */
+
+.form-item input.range-input {
+    width: 100%;
+    height: 10px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: #ddd0b8;
+    cursor: pointer;
+}
+
+.form-item input.range-input::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--gold);
+    border-radius: 50%;
+    appearance: none;
+    -webkit-appearance: none;
+    background: #3b2f2f;
+    cursor: pointer;
+}
+
+.form-item input.range-input::-moz-range-thumb {
+    width: 17px;
+    height: 17px;
+    border: 3px solid var(--gold);
+    border-radius: 50%;
+    background: #3b2f2f;
+    cursor: pointer;
+}
+
+#progress-value,
+#interest-value {
+    margin-left: 6px;
+    color: #9b7838;
+}
+
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 7px;
+    color: #7a6a58;
+    font-size: 13px;
+}
+
+/* =========================
+   作品報告書
+========================= */
+
+.report-area {
+    position: relative;
+    z-index: 1;
+    margin-top: 42px;
+    padding-top: 34px;
+    border-top: 1px solid var(--line);
+}
+
+.report-heading {
+    margin-bottom: 22px;
+    text-align: center;
+}
+
+/* Word風ツールバー */
+
+.editor-toolbar {
+    position: sticky;
+    top: 10px;
+    z-index: 1000;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    padding: 12px;
+    background: #efe3cc;
+    border: 1px solid #bca77c;
+    border-bottom: 4px solid var(--gold);
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 5px 14px rgba(45, 36, 27, 0.12);
+}
+
+.toolbar-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding-right: 10px;
+    border-right: 1px solid #cdbb98;
+}
+
+.toolbar-group:last-child {
+    padding-right: 0;
+    border-right: 0;
+}
+
+.editor-toolbar button,
+.editor-toolbar select,
+.editor-toolbar input[type="color"] {
+    min-height: 35px;
+    padding: 6px 10px;
+    color: #3b2a1c;
+    background: #fffaf0;
+    border: 1px solid #bca77c;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.editor-toolbar input[type="color"] {
+    width: 42px;
+    padding: 4px;
+}
+
+.editor-toolbar button:hover,
+.editor-toolbar select:hover {
+    background: #ead9b9;
+    border-color: var(--gold);
+}
+
+.editor-toolbar .danger-button {
+    color: #8b1e1e;
+    border-color: #c79b8d;
+}
+
+.editor-toolbar .danger-button:hover {
+    color: #fffaf0;
+    background: #8b1e1e;
+}
+
+/* 用紙の周囲 */
+
+.document-workspace {
+    width: 100%;
+    padding: 42px;
+    overflow: hidden;
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)),
+        #c8c1b5;
+    border: 1px solid #b7aa95;
+    border-top: 0;
+    box-shadow: inset 0 8px 18px rgba(49, 39, 29, 0.08);
+}
+
+/*
+ * transformされた用紙はレイアウト上の幅・高さが変化しないため、
+ * stage側を実際の表示サイズに合わせる。
+ */
+.report-page-stage {
+    position: relative;
+    width: 794px;
+    height: 1123px;
+    margin: 0 auto;
+}
+
+/* A4風：内部座標は常に794 x 1123 */
+
+.report-page {
+    position: relative;
+    width: 794px;
+    min-width: 794px;
+    height: 1123px;
+    min-height: 1123px;
+    margin: 0;
+    overflow: hidden;
+    transform-origin: top left;
+    background:
+        linear-gradient(rgba(255,255,255,0.97), rgba(255,255,255,0.97)),
+        #fff;
+    border: 1px solid #ddd6cb;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.24);
+}
+
+.report-page::before {
+    content: "A4 WORK REPORT";
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    color: #c6bda9;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    pointer-events: none;
+}
+
+/* 配置した要素 */
+
+.report-element {
+    position: absolute;
+    min-width: 80px;
+    min-height: 40px;
+    resize: both;
+    overflow: auto;
+    border: 1px dashed transparent;
+    background: rgba(255, 255, 255, 0.01);
+    cursor: default;
+    touch-action: none;
+}
+
+.report-element:hover {
+    border-color: rgba(185, 151, 79, 0.55);
+}
+
+.report-element.selected {
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 0 2px rgba(185, 151, 79, 0.16);
+}
+
+/* 他のオブジェクトへ重なる直前の「抵抗」表示 */
+.report-element.resisting {
+    border-color: var(--gold);
+    box-shadow:
+        0 0 0 3px rgba(185, 151, 79, 0.24),
+        0 6px 18px rgba(80, 58, 25, 0.16);
+}
+
+.report-element[data-type="image"],
+.report-element[data-type="shape"] {
+    cursor: grab;
+}
+
+.report-element[data-type="image"]:active,
+.report-element[data-type="shape"]:active,
+.report-element.dragging {
+    cursor: grabbing;
+}
+
+/* 移動ハンドル */
+
+.drag-handle {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    z-index: 20;
+    display: none;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    color: #fffaf0;
+    background: #3b2f2f;
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 10px;
+    line-height: 1;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+.drag-handle::before {
+    content: "✥";
+    color: #e8d49a;
+}
+
+.report-element.selected .drag-handle {
+    display: inline-flex;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* 編集可能文字 */
+
+.editable-text {
+    width: 100%;
+    min-height: 100%;
+    padding: 30px 8px 8px;
+    outline: none;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    cursor: text;
+}
+
+.report-element:not(.selected) .editable-text {
+    padding-top: 8px;
+}
+
+/* 画像 */
+
+.report-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* 図形 */
+
+.shape-content {
+    width: 100%;
+    height: 100%;
+    background: #d6bc74;
+    pointer-events: none;
+}
+
+/* 図形の種類 */
+.shape-rectangle {
+    border-radius: 2px;
+}
+
+.shape-triangle {
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+.shape-circle {
+    border-radius: 50%;
+}
+
+.shape-arrow {
+    clip-path: polygon(
+        0% 34%,
+        64% 34%,
+        64% 12%,
+        100% 50%,
+        64% 88%,
+        64% 66%,
+        0% 66%
+    );
+}
+
+/* 図形選択メニュー */
+.shape-picker {
+    position: relative;
+}
+
+.shape-picker-button {
+    white-space: nowrap;
+}
+
+.shape-menu {
+    position: absolute;
+    top: calc(100% + 7px);
+    left: 0;
+    z-index: 1200;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(92px, 1fr));
+    gap: 6px;
+    min-width: 210px;
+    padding: 8px;
+    background: #fffaf0;
+    border: 1px solid #bca77c;
+    border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(45, 36, 27, 0.22);
+}
+
+.shape-menu[hidden] {
+    display: none;
+}
+
+.shape-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 7px 9px;
+    text-align: left;
+}
+
+.shape-preview {
+    display: inline-block;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 22px;
+    background: var(--gold-light);
+}
+
+.shape-preview-rectangle {
+    border-radius: 2px;
+}
+
+.shape-preview-triangle {
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+.shape-preview-circle {
+    width: 24px;
+    height: 24px;
+    margin: 0 2px;
+    border-radius: 50%;
+}
+
+.shape-preview-arrow {
+    clip-path: polygon(
+        0% 34%,
+        62% 34%,
+        62% 10%,
+        100% 50%,
+        62% 90%,
+        62% 66%,
+        0% 66%
+    );
+}
+
+/* URL */
+
+.link-element .editable-text {
+    color: #315a93;
+    text-decoration: underline;
+}
+
+/* 参考サイト */
+
+.reference-area {
+    margin-top: 30px;
+    padding: 24px;
+    background: #f8efd9;
+    border: 1px solid #d8c29a;
+}
+
+/* =========================
+   下部ボタン
+========================= */
+
+.button-area {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 34px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+}
+
+.back-button,
+.submit-button {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.back-button {
+    color: #4a382d;
+    background: #fffaf0;
+    border: 1px solid #8a7965;
+}
+
+.submit-button {
+    color: #fffaf0;
+    background: #3b2f2f;
+    border: 1px solid #3b2f2f;
+}
+
+.back-button:hover {
+    background: #eee3cf;
+}
+
+.submit-button:hover {
+    background: #5a4540;
+    transform: translateY(-1px);
+}
+
+/* =========================
+   レスポンシブ
+========================= */
+
+@media (max-width: 900px) {
+    .museum-header {
+        padding: 38px 18px;
+    }
+
+    .museum-header h1 {
+        font-size: 32px;
+    }
+
+    .page-main {
+        margin: 44px auto;
+        padding: 0 18px;
+    }
+
+    .create-work-card {
+        padding: 30px 22px;
+        border-width: 10px;
+    }
+
+    .basic-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-item.full-width {
+        grid-column: auto;
+    }
+
+    .document-workspace {
+        padding: 20px;
+    }
+
+    .editor-toolbar {
+        position: static;
+    }
+
+    .toolbar-group {
+        width: 100%;
+        padding-right: 0;
+        padding-bottom: 7px;
+        border-right: 0;
+        border-bottom: 1px solid #cdbb98;
+    }
+
+    .toolbar-group:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .page-main {
+        padding: 0 12px;
+    }
+
+    .create-work-card {
+        padding: 26px 16px;
+        border-width: 7px;
+    }
+
+    .card-title-area h2,
+    .report-heading h2 {
+        font-size: 25px;
+    }
+
+    .button-area {
+        flex-direction: column;
+    }
+
+    .back-button,
+    .submit-button {
+        width: 100%;
+        text-align: center;
+    }
+}
+/* =========================
+   高度な編集機能
+========================= */
+
+.editor-toolbar button:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+    background: #e9dfcb;
+    color: #8d816d;
+    border-color: #cfc1a8;
+    transform: none;
+}
+
+.history-group button {
+    min-width: 94px;
+}
+
+.editor-message {
+    min-height: 1.4em;
+    margin: 10px 0 0;
+    color: #6b5a46;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 13px;
+}
+
+.editor-message.error-message {
+    color: #8b1e1e;
+    font-weight: bold;
+}
+
+/* 画像はブラウザ標準resizeではなく専用ハンドルで拡大縮小する */
+.report-element[data-type="image"] {
+    resize: none;
+    overflow: visible;
+}
+
+.report-element[data-type="image"] .report-image,
+.report-element[data-type="image"] img {
+    border-radius: 2px;
+}
+
+.image-resize-handle {
+    position: absolute;
+    right: -7px;
+    bottom: -7px;
+    z-index: 30;
+    display: none;
+    width: 15px;
+    height: 15px;
+    border: 2px solid #fffaf0;
+    border-radius: 3px;
+    background: var(--gold);
+    box-shadow: 0 1px 4px rgba(45, 36, 27, 0.35);
+    cursor: nwse-resize;
+    touch-action: none;
+}
+
+.report-element[data-type="image"].selected .image-resize-handle {
+    display: block;
+}
+
+/* 部分文字装飾で生成されるspanは通常の文章の流れを保つ */
+.editable-text span {
+    white-space: inherit;
+}
+
+.editable-text::selection,
+.editable-text *::selection {
+    background: rgba(185, 151, 79, 0.32);
+}
+
+@media (max-width: 900px) {
+    .history-group button {
+        min-width: 0;
+    }
+}
+/* =========================
+   図形色・ショートカット補助
+========================= */
+
+.shape-color-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 35px;
+    padding: 4px 7px;
+    color: #3b2a1c;
+    background: #fffaf0;
+    border: 1px solid #bca77c;
+    border-radius: 5px;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.editor-toolbar .shape-color-input {
+    width: 34px;
+    min-height: 27px;
+    height: 27px;
+    padding: 2px;
+    border-radius: 4px;
+}
+
+.shape-color-control:has(.shape-color-input:disabled) {
+    opacity: 0.48;
+}
+
+.shape-color-input:disabled {
+    cursor: not-allowed;
+}
+
+
+/* =========================
+   複数ページ
+========================= */
+
+.page-tools {
+    align-items: center;
+}
+
+.page-indicator {
+    display: inline-flex;
+    align-items: center;
+    min-height: 35px;
+    padding: 6px 10px;
+    color: #5f4d3b;
+    background: #fffaf0;
+    border: 1px solid #cdbb98;
+    border-radius: 5px;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.report-pages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 58px;
+    width: 100%;
+    padding-bottom: 34px;
+}
+
+.report-page-stage {
+    position: relative;
+    flex: 0 0 auto;
+    margin: 0 auto;
+    transition:
+        outline-color 0.15s,
+        box-shadow 0.15s;
+}
+
+.report-page-stage.active-page-stage {
+    outline: 3px solid rgba(185, 151, 79, 0.88);
+    outline-offset: 7px;
+    box-shadow: 0 0 0 4px rgba(185, 151, 79, 0.12);
+}
+
+.report-page-stage::after {
+    content: attr(data-page-label);
+    position: absolute;
+    left: 50%;
+    bottom: -31px;
+    transform: translateX(-50%);
+    padding: 4px 10px;
+    color: #5f4d3b;
+    background: rgba(255, 250, 240, 0.95);
+    border: 1px solid #bca77c;
+    border-radius: 999px;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+@media (max-width: 900px) {
+    .page-tools {
+        width: 100%;
+    }
+
+    .report-pages {
+        gap: 50px;
+    }
+}

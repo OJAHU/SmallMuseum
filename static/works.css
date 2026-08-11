@@ -1,0 +1,604 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+
+    font-family:
+        "Yu Mincho",
+        "Hiragino Mincho ProN",
+        "Yu Gothic",
+        "Meiryo",
+        serif;
+
+    color: #2b2118;
+
+    background:
+        linear-gradient(
+            rgba(255, 253, 247, 0.92),
+            rgba(239, 231, 214, 0.96)
+        ),
+        repeating-linear-gradient(
+            90deg,
+            #f7f0e4 0,
+            #f7f0e4 48px,
+            #f1e8d8 48px,
+            #f1e8d8 96px
+        );
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+
+/* =========================
+   ヘッダー
+========================= */
+
+.page-header {
+    padding: 48px 20px;
+
+    background:
+        radial-gradient(
+            circle at top,
+            rgba(218, 184, 95, 0.28),
+            transparent 35%
+        ),
+        linear-gradient(
+            135deg,
+            #1d1412,
+            #3c2a24 55%,
+            #1a1210
+        );
+
+    color: #fff8e8;
+
+    border-bottom: 8px solid #b9974f;
+}
+
+.header-content {
+    max-width: 1100px;
+    margin: auto;
+    text-align: center;
+}
+
+.sub-title {
+    margin: 0 0 10px;
+
+    color: #d6bc74;
+
+    font-size: 14px;
+
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+.page-header h1 {
+    margin: 0;
+
+    font-size: 44px;
+    font-weight: normal;
+
+    letter-spacing: 0.14em;
+}
+
+.room-description {
+    margin: 18px auto;
+
+    max-width: 700px;
+
+    color: #e8dcc5;
+
+    line-height: 1.8;
+}
+
+.header-info {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+
+    margin: 24px 0;
+}
+
+.header-info span {
+    padding: 7px 16px;
+
+    border: 1px solid #8d7139;
+
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.08);
+
+    color: #ead8aa;
+
+    font-size: 14px;
+}
+
+.header-nav {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+}
+
+.header-nav a {
+    display: inline-block;
+
+    padding: 12px 28px;
+
+    border-radius: 999px;
+
+    background: #b9974f;
+
+    color: #241914;
+
+    font-weight: bold;
+
+    box-shadow: 0 4px 0 #72582b;
+
+    transition: 0.2s;
+}
+
+.header-nav a:hover {
+    transform: translateY(2px);
+
+    background: #d6b86a;
+
+    box-shadow: 0 2px 0 #72582b;
+}
+
+
+/* =========================
+   メイン
+========================= */
+
+.page-main {
+    max-width: 1180px;
+
+    margin: 64px auto;
+
+    padding: 0 28px;
+}
+
+.section-heading {
+    margin-bottom: 42px;
+
+    text-align: center;
+}
+
+.section-heading p {
+    margin: 0 0 8px;
+
+    color: #9b7838;
+
+    font-size: 13px;
+
+    letter-spacing: 0.2em;
+
+    text-transform: uppercase;
+}
+
+.section-heading h2 {
+    margin: 0;
+
+    font-size: 34px;
+    font-weight: normal;
+
+    letter-spacing: 0.14em;
+}
+
+.section-heading span {
+    display: inline-block;
+
+    margin-top: 14px;
+
+    color: #6b5a46;
+}
+
+
+/* =========================
+   作品一覧
+========================= */
+
+.works-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(280px, 1fr));
+
+    gap: 34px;
+
+    align-items: stretch;
+}
+
+
+/* 額縁 */
+
+.work-card {
+    padding: 13px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #d7b96b,
+            #9a7537 45%,
+            #6f5127
+        );
+
+    box-shadow:
+        0 18px 32px rgba(45, 36, 27, 0.22),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+
+/* 額縁の中 */
+
+.work-inner {
+    min-height: 390px;
+
+    padding: 30px 25px;
+
+    background:
+        linear-gradient(
+            rgba(255, 255, 255, 0.92),
+            rgba(255, 248, 234, 0.96)
+        );
+
+    border: 1px solid rgba(82, 58, 30, 0.35);
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+.work-inner::before {
+    content: "";
+
+    width: 70px;
+    height: 6px;
+
+    margin: 0 auto 20px;
+
+    border-radius: 999px;
+
+    background: #b9974f;
+}
+
+.work-number {
+    margin: 0 0 12px;
+
+    text-align: center;
+
+    color: #9b7838;
+
+    font-size: 12px;
+
+    letter-spacing: 0.15em;
+}
+
+.work-inner h3 {
+    margin: 0 0 20px;
+
+    text-align: center;
+
+    font-size: 24px;
+    font-weight: normal;
+
+    color: #332315;
+}
+
+
+/* =========================
+   タグ
+========================= */
+
+.work-tags {
+    display: flex;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+
+    margin-bottom: 22px;
+}
+
+.tag-block {
+    padding: 5px 10px;
+
+    border: 1px solid #d8bf77;
+    border-left: 4px solid #b98a2e;
+
+    border-radius: 4px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #fff8e6,
+            #ead7a4
+        );
+
+    color: #4a3520;
+
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.tag-block::before {
+    content: "#";
+
+    margin-right: 3px;
+
+    color: #9b7428;
+}
+
+
+/* =========================
+   進捗・関心度
+========================= */
+
+.status-area {
+    margin-top: auto;
+}
+
+.status-item {
+    margin-top: 16px;
+}
+
+.status-head {
+    display: flex;
+
+    justify-content: space-between;
+
+    margin-bottom: 7px;
+
+    font-size: 13px;
+
+    color: #5f4d3b;
+}
+
+.status-head strong {
+    color: #8c692b;
+}
+
+.status-bar {
+    height: 8px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: #ded1b9;
+}
+
+.status-fill {
+    height: 100%;
+
+    border-radius: 999px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #88692e,
+            #c4a14b
+        );
+}
+
+.interest-fill {
+    background:
+        linear-gradient(
+            90deg,
+            #725142,
+            #b87c5a
+        );
+}
+
+
+/* =========================
+   日付
+========================= */
+
+.work-meta {
+    margin-top: 22px;
+
+    padding-top: 14px;
+
+    border-top: 1px solid #ddceb1;
+}
+
+.work-meta p {
+    display: flex;
+
+    justify-content: space-between;
+
+    margin: 6px 0;
+
+    color: #776653;
+
+    font-size: 12px;
+}
+
+
+/* =========================
+   ボタン
+========================= */
+
+.work-actions {
+    margin-top: 20px;
+
+    text-align: center;
+}
+
+.preview-button,
+.create-button {
+    display: inline-block;
+
+    padding: 10px 22px;
+
+    border: 1px solid #b9974f;
+
+    border-radius: 999px;
+
+    background: #fffaf0;
+
+    color: #3b2a1c;
+
+    font-weight: bold;
+}
+
+
+/* =========================
+   空の展示室
+========================= */
+
+.empty-section {
+    display: flex;
+
+    justify-content: center;
+}
+
+.empty-card {
+    width: min(650px, 100%);
+
+    padding: 54px 30px;
+
+    border: 14px solid #d8c29a;
+
+    outline: 2px solid #8b6f3f;
+
+    background: #fffaf0;
+
+    text-align: center;
+
+    box-shadow:
+        0 18px 32px rgba(45, 36, 27, 0.18);
+}
+
+.empty-card h2 {
+    margin: 0;
+
+    font-size: 30px;
+
+    font-weight: normal;
+}
+
+.empty-card > p:not(.sub-title) {
+    margin: 20px 0;
+
+    color: #5f4d3b;
+}
+
+
+/* =========================
+   スマホ
+========================= */
+
+@media (max-width: 700px) {
+
+    .page-header {
+        padding: 36px 18px;
+    }
+
+    .page-header h1 {
+        font-size: 30px;
+    }
+
+    .page-main {
+        margin: 42px auto;
+
+        padding: 0 18px;
+    }
+
+    .works-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .work-card {
+        padding: 10px;
+    }
+
+    .work-inner {
+        min-height: 350px;
+
+        padding: 26px 20px;
+    }
+}
+
+.room-tags {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    margin: 18px auto 22px;
+}
+
+.room-tag {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 6px 13px;
+
+    border: 1px solid #8d7139;
+    border-left: 4px solid #d6b86a;
+
+    border-radius: 4px;
+
+    background: rgba(255, 255, 255, 0.08);
+
+    color: #ead8aa;
+
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.room-tag::before {
+    content: "#";
+    margin-right: 4px;
+
+    color: #d6bc74;
+}
+
+.work-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+
+    margin-top: 20px;
+}
+
+.work-actions form {
+    margin: 0;
+}
+
+.delete-button {
+    display: inline-block;
+
+    padding: 10px 22px;
+
+    border: 1px solid #9b4b3f;
+    border-radius: 999px;
+
+    background: #fffaf0;
+    color: #8b2f25;
+
+    font-family: inherit;
+    font-weight: bold;
+
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.delete-button:hover {
+    background: #8b2f25;
+    color: #fffaf0;
+}
