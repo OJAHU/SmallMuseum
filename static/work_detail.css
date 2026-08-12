@@ -509,3 +509,23 @@ a {
         gap: 50px;
     }
 }
+
+/* =========================
+   行単位インデント・箇条書き表示
+========================= */
+.report-text > .editor-line {
+    position: relative;
+    min-height: 1.35em;
+    margin-left: 0;
+    padding-left: 0;
+    padding-right: 2px;
+    line-height: 1.55;
+}
+.report-text > .editor-line.is-bullet { padding-left: 1.35em; }
+.report-text > .editor-line.is-bullet::before {
+    content: "•";
+    position: absolute;
+    left: 0.15em;
+    top: 0;
+    font-weight: bold;
+}

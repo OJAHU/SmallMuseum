@@ -242,6 +242,68 @@ function sanitizeHtml(html) {
    テキスト
 ========================= */
 
+function clampPreviewIndent(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 0;
+    return Math.max(0, Math.min(5, Math.round(numeric)));
+}
+
+function normalizePreviewLines(content, legacyIndentLevel = null) {
+    const originalNodes = [...content.childNodes];
+    const alreadyNormalized = originalNodes.length > 0 && originalNodes.every(node =>
+        node instanceof Element && node.classList.contains("editor-line")
+    );
+
+    if (!alreadyNormalized) {
+        const fragment = document.createDocumentFragment();
+        let currentLine = null;
+
+        function flush() {
+            if (!currentLine) return;
+            if (!currentLine.hasChildNodes()) currentLine.appendChild(document.createElement("br"));
+            fragment.appendChild(currentLine);
+            currentLine = null;
+        }
+
+        originalNodes.forEach(node => {
+            if (node instanceof HTMLBRElement) {
+                flush();
+                const empty = document.createElement("div");
+                empty.className = "editor-line";
+                empty.appendChild(document.createElement("br"));
+                fragment.appendChild(empty);
+                return;
+            }
+
+            if (node instanceof Element && ["DIV", "P", "LI"].includes(node.tagName)) {
+                flush();
+                node.classList.add("editor-line");
+                fragment.appendChild(node);
+                return;
+            }
+
+            if (!currentLine) {
+                currentLine = document.createElement("div");
+                currentLine.className = "editor-line";
+            }
+            currentLine.appendChild(node);
+        });
+
+        flush();
+        if (fragment.childNodes.length > 0) content.replaceChildren(fragment);
+    }
+
+    const legacy = legacyIndentLevel === null ? null : clampPreviewIndent(legacyIndentLevel);
+
+    content.querySelectorAll(":scope > .editor-line").forEach(line => {
+        const level = line.hasAttribute("data-indent-level")
+            ? clampPreviewIndent(line.dataset.indentLevel)
+            : (legacy ?? 0);
+        line.dataset.indentLevel = String(level);
+        line.style.marginLeft = (level * 28) + "px";
+    });
+}
+
 function createTextElement(data) {
 
     const content =
@@ -294,10 +356,12 @@ function createTextElement(data) {
             data.textAlign;
     }
 
-    if (data.indentLevel !== undefined && data.indentLevel !== null) {
-        const indentLevel = Math.max(0, Math.min(5, Number(data.indentLevel) || 0));
-        content.style.paddingLeft = (8 + indentLevel * 28) + "px";
-    }
+    normalizePreviewLines(
+        content,
+        data.indentLevel !== undefined && data.indentLevel !== null
+            ? data.indentLevel
+            : null
+    );
 
 
     return content;

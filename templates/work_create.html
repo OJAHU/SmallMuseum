@@ -275,23 +275,35 @@
                         <button type="button" onclick="setAlign('right')">右</button>
                     </div>
 
-                    <div class="toolbar-group indent-group" aria-label="インデント調整">
+                    <div class="toolbar-group indent-group" aria-label="段落・インデント調整">
+                        <button
+                            id="bullet-list-button"
+                            class="paragraph-style-button"
+                            type="button"
+                            onclick="toggleBulletList()"
+                            disabled
+                            title="カーソルがある行、または選択した複数行を箇条書きにする"
+                        >
+                            • 箇条書き
+                        </button>
                         <button
                             id="indent-decrease-button"
+                            class="paragraph-style-button"
                             type="button"
                             onclick="changeIndent(-1)"
                             disabled
-                            title="インデントを1段階浅くする"
+                            title="カーソルがある行、または選択した複数行のインデントを1段階浅くする"
                         >
                             ⇤ インデント
                         </button>
                         <span id="indent-indicator" class="indent-indicator" aria-live="polite">0 / 5</span>
                         <button
                             id="indent-increase-button"
+                            class="paragraph-style-button"
                             type="button"
                             onclick="changeIndent(1)"
                             disabled
-                            title="インデントを1段階深くする"
+                            title="カーソルがある行、または選択した複数行のインデントを1段階深くする"
                         >
                             インデント ⇥
                         </button>
@@ -427,8 +439,7 @@ const TEXT_HISTORY_INTERVAL = 700;
 const MAX_STORED_IMAGE_EDGE = 2000;
 const MAX_INDENT_LEVEL = 5;
 const TEXT_INDENT_STEP = 28;
-const TEXT_BASE_PADDING = 8;
-
+const bulletListButton = document.getElementById("bullet-list-button");
 const indentDecreaseButton = document.getElementById("indent-decrease-button");
 const indentIncreaseButton = document.getElementById("indent-increase-button");
 const indentIndicator = document.getElementById("indent-indicator");
@@ -1032,19 +1043,48 @@ function bindEditable(editable) {
 
     boundEditables.add(editable);
 
-    editable.addEventListener("beforeinput", function() {
+    editable.addEventListener("beforeinput", function(event) {
         recordTextHistory(editable);
+
+        if (event.inputType === "insertParagraph") {
+            const currentLines = getActiveParagraphLines(editable);
+            const currentLine = currentLines[currentLines.length - 1] || null;
+            editable.dataset.pendingIndentLevel = String(getLineIndentLevel(currentLine));
+            editable.dataset.pendingBullet = currentLine?.classList.contains("is-bullet") ? "1" : "0";
+        }
+    });
+
+    editable.addEventListener("input", function(event) {
+        normalizeEditableLines(editable);
+
+        if (event.inputType === "insertParagraph") {
+            const currentLines = getActiveParagraphLines(editable);
+            const currentLine = currentLines[currentLines.length - 1] || null;
+
+            if (currentLine) {
+                applyIndentToLine(currentLine, editable.dataset.pendingIndentLevel || 0);
+                currentLine.classList.toggle("is-bullet", editable.dataset.pendingBullet === "1");
+            }
+
+            delete editable.dataset.pendingIndentLevel;
+            delete editable.dataset.pendingBullet;
+        }
+
+        syncTextQuickControls();
     });
 
     editable.addEventListener("paste", function() {
         recordTextHistory(editable);
+        requestAnimationFrame(() => {
+            normalizeEditableLines(editable);
+            syncTextQuickControls();
+        });
     });
 
     editable.addEventListener("focus", function() {
+        normalizeEditableLines(editable);
         const element = editable.closest(".report-element");
-        if (element) {
-            selectElement(element);
-        }
+        if (element) selectElement(element);
     });
 }
 
@@ -1056,19 +1096,33 @@ function bindAllElements() {
    テキスト・見出し
 ========================= */
 
+function createEditorLine(text = "") {
+    const line = document.createElement("div");
+    line.className = "editor-line";
+    line.dataset.indentLevel = "0";
+
+    if (text) {
+        line.textContent = text;
+    } else {
+        line.appendChild(document.createElement("br"));
+    }
+
+    return line;
+}
+
 function addText() {
     const element = createBaseElement("text");
     const text = document.createElement("div");
 
     text.className = "editable-text";
     text.contentEditable = "true";
-    text.textContent = "ここに文章を入力してください。";
     text.style.fontSize = "16px";
+    text.appendChild(createEditorLine("ここに文章を入力してください。"));
 
     element.appendChild(text);
-    applyIndentToElement(element, 0);
     bindEditable(text);
     text.focus();
+    placeCaretAtEnd(text.querySelector(".editor-line"));
 }
 
 function addHeading(level) {
@@ -1087,111 +1141,305 @@ function addHeading(level) {
     const text = document.createElement("div");
     text.className = "editable-text";
     text.contentEditable = "true";
-    text.textContent = setting.label;
     text.style.fontSize = setting.size + "px";
     text.style.fontWeight = "bold";
+    text.appendChild(createEditorLine(setting.label));
 
     element.appendChild(text);
-    applyIndentToElement(element, 0);
     bindEditable(text);
     text.focus();
+    placeCaretAtEnd(text.querySelector(".editor-line"));
 }
 
 
 /* =========================
-   テキスト補助操作
+   行単位の段落・インデント操作
 ========================= */
 
 function clampIndentLevel(value) {
     const numeric = Number(value);
-
-    if (!Number.isFinite(numeric)) {
-        return 0;
-    }
-
+    if (!Number.isFinite(numeric)) return 0;
     return Math.max(0, Math.min(MAX_INDENT_LEVEL, Math.round(numeric)));
 }
 
 function getSelectedTextElement() {
-    if (!selectedElement) {
-        return null;
-    }
-
+    if (!selectedElement) return null;
     const type = selectedElement.dataset.type;
-
-    if (type !== "text" && type !== "heading") {
-        return null;
-    }
-
-    return selectedElement.querySelector(".editable-text")
-        ? selectedElement
-        : null;
+    if (type !== "text" && type !== "heading") return null;
+    return selectedElement.querySelector(".editable-text") ? selectedElement : null;
 }
 
-function getIndentLevel(element = selectedElement) {
-    if (!element) {
-        return 0;
-    }
-
-    return clampIndentLevel(element.dataset.indentLevel || 0);
+function isBlockLikeNode(node) {
+    return node instanceof Element && ["DIV", "P", "LI", "UL", "OL", "BLOCKQUOTE"].includes(node.tagName);
 }
 
-function applyIndentToElement(element, level) {
-    if (!element) {
+function createSelectionMarker(kind) {
+    const marker = document.createElement("span");
+    marker.dataset.editorSelectionMarker = kind;
+    marker.style.cssText = "display:inline-block;width:0;height:0;overflow:hidden";
+    marker.setAttribute("aria-hidden", "true");
+    return marker;
+}
+
+function insertSelectionMarkers(editable) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+
+    const range = selection.getRangeAt(0);
+    if (!editable.contains(range.startContainer) || !editable.contains(range.endContainer)) return null;
+
+    const endMarker = createSelectionMarker("end");
+    const startMarker = createSelectionMarker("start");
+
+    const endRange = range.cloneRange();
+    endRange.collapse(false);
+    endRange.insertNode(endMarker);
+
+    const startRange = range.cloneRange();
+    startRange.collapse(true);
+    startRange.insertNode(startMarker);
+
+    return { startMarker, endMarker, collapsed: range.collapsed };
+}
+
+function restoreSelectionFromMarkers(markers, editable) {
+    if (!markers) return;
+    const { startMarker, endMarker, collapsed } = markers;
+
+    if (!startMarker.isConnected || !endMarker.isConnected) {
+        startMarker.remove();
+        endMarker.remove();
         return;
     }
 
-    const editable = element.querySelector(".editable-text");
-
-    if (!editable) {
-        return;
+    const range = document.createRange();
+    range.setStartAfter(startMarker);
+    if (collapsed) {
+        range.collapse(true);
+    } else {
+        range.setEndBefore(endMarker);
     }
 
+    startMarker.remove();
+    endMarker.remove();
+    setSavedRange(range, editable);
+}
+
+function normalizeEditableLines(editable, legacyIndentLevel = null) {
+    if (!editable) return;
+
+    const needsNormalization = [...editable.childNodes].some(node => !(
+        node instanceof Element && node.classList.contains("editor-line")
+    ));
+
+    const markers = needsNormalization ? insertSelectionMarkers(editable) : null;
+
+    if (needsNormalization) {
+        const originalNodes = [...editable.childNodes];
+        const fragment = document.createDocumentFragment();
+        let currentLine = null;
+
+        function flushCurrentLine() {
+            if (!currentLine) return;
+            if (!currentLine.hasChildNodes()) currentLine.appendChild(document.createElement("br"));
+            fragment.appendChild(currentLine);
+            currentLine = null;
+        }
+
+        originalNodes.forEach(node => {
+            if (node instanceof HTMLBRElement) {
+                flushCurrentLine();
+                fragment.appendChild(createEditorLine());
+                return;
+            }
+
+            if (node instanceof Element && node.classList.contains("editor-line")) {
+                flushCurrentLine();
+                fragment.appendChild(node);
+                return;
+            }
+
+            if (isBlockLikeNode(node)) {
+                flushCurrentLine();
+
+                if (node.tagName === "UL" || node.tagName === "OL") {
+                    [...node.children].forEach(child => {
+                        const line = document.createElement("div");
+                        line.className = "editor-line is-bullet";
+                        line.dataset.indentLevel = String(clampIndentLevel(child.dataset.indentLevel || 0));
+                        while (child.firstChild) line.appendChild(child.firstChild);
+                        if (!line.hasChildNodes()) line.appendChild(document.createElement("br"));
+                        fragment.appendChild(line);
+                    });
+                } else {
+                    node.classList.add("editor-line");
+                    node.dataset.indentLevel = String(clampIndentLevel(node.dataset.indentLevel || 0));
+                    fragment.appendChild(node);
+                }
+                return;
+            }
+
+            if (!currentLine) {
+                currentLine = document.createElement("div");
+                currentLine.className = "editor-line";
+                currentLine.dataset.indentLevel = "0";
+            }
+            currentLine.appendChild(node);
+        });
+
+        flushCurrentLine();
+        editable.replaceChildren(fragment);
+    }
+
+    const legacy = legacyIndentLevel === null ? null : clampIndentLevel(legacyIndentLevel);
+
+    editable.querySelectorAll(":scope > .editor-line").forEach(line => {
+        const level = line.hasAttribute("data-indent-level")
+            ? clampIndentLevel(line.dataset.indentLevel)
+            : (legacy ?? 0);
+        line.dataset.indentLevel = String(level);
+        line.style.marginLeft = (level * TEXT_INDENT_STEP) + "px";
+        if (!line.hasChildNodes()) line.appendChild(document.createElement("br"));
+    });
+
+    if (!editable.querySelector(":scope > .editor-line")) {
+        editable.appendChild(createEditorLine());
+    }
+
+    restoreSelectionFromMarkers(markers, editable);
+}
+
+function getLineForBoundary(editable, container, offset, preferPrevious = false) {
+    let node = container;
+
+    if (node === editable) {
+        const children = [...editable.children];
+        if (children.length === 0) return null;
+        let index = Math.min(offset, children.length - 1);
+        if (preferPrevious && offset > 0) index = Math.min(offset - 1, children.length - 1);
+        node = children[Math.max(0, index)];
+    }
+
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    if (!(node instanceof Element)) return null;
+    return node.closest(".editor-line");
+}
+
+function getActiveParagraphLines(editable) {
+    normalizeEditableLines(editable);
+    const lines = [...editable.querySelectorAll(":scope > .editor-line")];
+    if (lines.length === 0) return [];
+
+    let range = null;
+    const selection = window.getSelection();
+
+    if (selection && selection.rangeCount > 0) {
+        const current = selection.getRangeAt(0);
+        if (editable.contains(current.startContainer) && editable.contains(current.endContainer)) {
+            range = current;
+        }
+    }
+
+    if (!range && lastTextRange && lastRangeEditable === editable) range = lastTextRange;
+    if (!range) return [lines[0]];
+
+    const startLine = getLineForBoundary(editable, range.startContainer, range.startOffset, false);
+    const endLine = getLineForBoundary(editable, range.endContainer, range.endOffset, !range.collapsed);
+    const startIndex = Math.max(0, lines.indexOf(startLine));
+    const rawEnd = lines.indexOf(endLine);
+    const endIndex = rawEnd < 0 ? startIndex : Math.max(startIndex, rawEnd);
+    return lines.slice(startIndex, endIndex + 1);
+}
+
+function getLineIndentLevel(line) {
+    return clampIndentLevel(line?.dataset.indentLevel || 0);
+}
+
+function applyIndentToLine(line, level) {
+    if (!line) return;
     const normalized = clampIndentLevel(level);
-    element.dataset.indentLevel = String(normalized);
-    editable.style.paddingLeft = (TEXT_BASE_PADDING + normalized * TEXT_INDENT_STEP) + "px";
+    line.dataset.indentLevel = String(normalized);
+    line.style.marginLeft = (normalized * TEXT_INDENT_STEP) + "px";
 }
 
 function changeIndent(delta) {
     const element = getSelectedTextElement();
+    if (!element) return;
 
-    if (!element) {
-        return;
-    }
+    const editable = element.querySelector(".editable-text");
+    const lines = getActiveParagraphLines(editable);
+    if (lines.length === 0) return;
 
-    const current = getIndentLevel(element);
-    const next = clampIndentLevel(current + delta);
+    const canChange = lines.some(line => {
+        const current = getLineIndentLevel(line);
+        return clampIndentLevel(current + delta) !== current;
+    });
 
-    if (next === current) {
+    if (!canChange) {
         syncTextQuickControls();
         return;
     }
 
     recordHistory();
-    applyIndentToElement(element, next);
+    lines.forEach(line => applyIndentToLine(line, getLineIndentLevel(line) + delta));
+    syncTextQuickControls();
+}
+
+function toggleBulletList() {
+    const element = getSelectedTextElement();
+    if (!element) return;
+
+    const editable = element.querySelector(".editable-text");
+    const lines = getActiveParagraphLines(editable);
+    if (lines.length === 0) return;
+
+    const shouldRemove = lines.every(line => line.classList.contains("is-bullet"));
+    recordHistory();
+    lines.forEach(line => line.classList.toggle("is-bullet", !shouldRemove));
     syncTextQuickControls();
 }
 
 function syncTextQuickControls() {
     const textElement = getSelectedTextElement();
     const enabled = Boolean(textElement);
-    const level = enabled ? getIndentLevel(textElement) : 0;
+    let lines = [];
+
+    if (enabled) {
+        const editable = textElement.querySelector(".editable-text");
+        lines = getActiveParagraphLines(editable);
+    }
 
     document.querySelectorAll(".append-today-button").forEach(button => {
         button.disabled = !enabled;
     });
 
+    const levels = lines.map(getLineIndentLevel);
+    const sameLevel = levels.length > 0 && levels.every(level => level === levels[0]);
+    const minLevel = levels.length > 0 ? Math.min(...levels) : 0;
+    const maxLevel = levels.length > 0 ? Math.max(...levels) : 0;
+
     if (indentIndicator) {
-        indentIndicator.textContent = `${level} / ${MAX_INDENT_LEVEL}`;
+        indentIndicator.textContent = sameLevel ? `${levels[0]} / ${MAX_INDENT_LEVEL}` : `複数 / ${MAX_INDENT_LEVEL}`;
     }
 
-    if (indentDecreaseButton) {
-        indentDecreaseButton.disabled = !enabled || level <= 0;
-    }
+    if (indentDecreaseButton) indentDecreaseButton.disabled = !enabled || lines.length === 0 || minLevel <= 0;
+    if (indentIncreaseButton) indentIncreaseButton.disabled = !enabled || lines.length === 0 || maxLevel >= MAX_INDENT_LEVEL;
 
-    if (indentIncreaseButton) {
-        indentIncreaseButton.disabled = !enabled || level >= MAX_INDENT_LEVEL;
+    if (bulletListButton) {
+        const allBulleted = lines.length > 0 && lines.every(line => line.classList.contains("is-bullet"));
+        bulletListButton.disabled = !enabled || lines.length === 0;
+        bulletListButton.classList.toggle("is-active", allBulleted);
+        bulletListButton.setAttribute("aria-pressed", String(allBulleted));
     }
+}
+
+function placeCaretAtEnd(node) {
+    if (!node) return;
+    const editable = node.closest(".editable-text");
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    range.collapse(false);
+    setSavedRange(range, editable);
 }
 
 function formatTodayJapanese(date = new Date()) {
@@ -1213,21 +1461,28 @@ function appendTodayToSelectedText() {
 
     recordHistory();
 
+    normalizeEditableLines(editable);
+
     const today = formatTodayJapanese();
-    const currentText = editable.innerText || "";
+    const lines = [...editable.querySelectorAll(":scope > .editor-line")];
+    const targetLine = lines[lines.length - 1] || createEditorLine();
+
+    if (!targetLine.isConnected) {
+        editable.appendChild(targetLine);
+    }
+
+    const currentText = targetLine.innerText || "";
     const separator = currentText && !/[\s　]$/.test(currentText) ? " " : "";
 
-    editable.appendChild(
-        document.createTextNode(separator + today)
-    );
+    if (targetLine.childNodes.length === 1 && targetLine.firstChild instanceof HTMLBRElement) {
+        targetLine.replaceChildren();
+    }
+
+    targetLine.appendChild(document.createTextNode(separator + today));
 
     editable.focus();
     selectElement(element);
-
-    const range = document.createRange();
-    range.selectNodeContents(editable);
-    range.collapse(false);
-    setSavedRange(range, editable);
+    placeCaretAtEnd(targetLine);
 }
 
 /* =========================
@@ -2208,6 +2463,13 @@ document.querySelectorAll(".text-style-button").forEach(button => {
     });
 });
 
+document.querySelectorAll(".paragraph-style-button").forEach(button => {
+    button.addEventListener("pointerdown", function(event) {
+        rememberCurrentTextSelection();
+        event.preventDefault();
+    });
+});
+
 /*
  * type=color はネイティブのカラーピッカーへフォーカスが移るため、
  * 開く直前に選択範囲を明示的に保存しておく。
@@ -2468,7 +2730,6 @@ function serializeElement(element) {
         data.fontWeight = editable.style.fontWeight;
         data.textDecoration = editable.style.textDecoration;
         data.textAlign = editable.style.textAlign;
-        data.indentLevel = getIndentLevel(element);
     }
 
     if (type === "image") {
@@ -2626,7 +2887,12 @@ function restoreElementOnPage(pageElement, data) {
         if (data.textAlign) editable.style.textAlign = data.textAlign;
 
         element.appendChild(editable);
-        applyIndentToElement(element, data.indentLevel || 0);
+        normalizeEditableLines(
+            editable,
+            data.indentLevel !== undefined && data.indentLevel !== null
+                ? data.indentLevel
+                : null
+        );
     } else if (data.type === "image") {
         element.classList.add("report-image");
 
@@ -2723,7 +2989,6 @@ restoreSavedReport(
 
 requestAnimationFrame(() => {
     updatePageScale();
-    updateQuickPageIndicatorFromViewport();
     syncTextQuickControls();
 });
 
