@@ -309,6 +309,34 @@
                         </button>
                     </div>
 
+                    <div class="toolbar-group numbering-group" aria-label="自動番号設定">
+                        <label class="number-group-control" title="同じグループ名の要素同士で1, 2, 3…と自動採番します">
+                            <span>番号グループ</span>
+                            <input
+                                id="number-group-input"
+                                class="number-group-input"
+                                type="text"
+                                list="number-group-list"
+                                placeholder="例：章"
+                                autocomplete="off"
+                                disabled
+                                onchange="changeNumberGroup()"
+                            >
+                            <datalist id="number-group-list"></datalist>
+                        </label>
+                        <button
+                            id="auto-number-button"
+                            class="paragraph-style-button"
+                            type="button"
+                            onclick="toggleAutoNumbering()"
+                            disabled
+                            title="選択したテキスト・見出しを指定グループで自動採番する"
+                            aria-pressed="false"
+                        >
+                            1. 自動番号
+                        </button>
+                    </div>
+
                     <div class="toolbar-group">
                         <button type="button" onclick="copyElement()">コピー</button>
                         <button type="button" onclick="bringFront()">前面</button>
@@ -443,6 +471,9 @@ const bulletListButton = document.getElementById("bullet-list-button");
 const indentDecreaseButton = document.getElementById("indent-decrease-button");
 const indentIncreaseButton = document.getElementById("indent-increase-button");
 const indentIndicator = document.getElementById("indent-indicator");
+const autoNumberButton = document.getElementById("auto-number-button");
+const numberGroupInput = document.getElementById("number-group-input");
+const numberGroupList = document.getElementById("number-group-list");
 
 let pageScale = 1;
 let selectedElement = null;
@@ -571,6 +602,7 @@ function addPage() {
     setActivePage(newStage);
     selectElement(null);
     updatePageScale();
+    refreshAutoNumbering();
 
     requestAnimationFrame(() => {
         newStage.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -594,6 +626,7 @@ function deleteActivePage() {
 
     setActivePage(Math.min(deletingIndex, getPageStages().length - 1));
     updatePageScale();
+    refreshAutoNumbering();
 }
 
 window.addEventListener("resize", updatePageScale);
@@ -685,6 +718,7 @@ function restoreEditorState(state) {
 
     historyRestoring = false;
     selectElement(null);
+    refreshAutoNumbering();
     updateHistoryButtons();
 }
 
@@ -865,6 +899,7 @@ function selectElement(element) {
 
     syncShapeColorControl();
     syncTextQuickControls();
+    syncNumberingControls();
 }
 
 pagesContainer.addEventListener("pointerdown", function(event) {
@@ -942,6 +977,71 @@ function setSavedRange(range, editable) {
    共通要素の生成・再バインド
 ========================= */
 
+function getBestVisiblePageStage() {
+    const stages = getPageStages();
+    if (stages.length === 0) return null;
+
+    const toolbar = document.querySelector(".editor-toolbar");
+    const toolbarBottom = toolbar
+        ? Math.min(window.innerHeight, Math.max(0, toolbar.getBoundingClientRect().bottom))
+        : 0;
+    const viewportTop = Math.max(0, toolbarBottom + 8);
+    const viewportBottom = window.innerHeight;
+
+    let bestStage = stages[activePageIndex] || stages[0];
+    let bestScore = -1;
+
+    stages.forEach(stage => {
+        const rect = stage.getBoundingClientRect();
+        const visibleTop = Math.max(rect.top, viewportTop);
+        const visibleBottom = Math.min(rect.bottom, viewportBottom);
+        const verticalVisible = Math.max(0, visibleBottom - visibleTop);
+        const horizontalVisible = Math.max(
+            0,
+            Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0)
+        );
+        const score = verticalVisible * Math.max(1, horizontalVisible);
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestStage = stage;
+        }
+    });
+
+    return bestStage;
+}
+
+function getSmartSpawnPosition(width = 300, height = 100) {
+    const targetStage = getBestVisiblePageStage();
+
+    if (targetStage) {
+        setActivePage(targetStage);
+    }
+
+    const targetPage = page;
+    const rect = targetPage.getBoundingClientRect();
+    const toolbar = document.querySelector(".editor-toolbar");
+    const toolbarBottom = toolbar
+        ? Math.min(window.innerHeight, Math.max(0, toolbar.getBoundingClientRect().bottom))
+        : 0;
+
+    const visibleTop = Math.max(rect.top, toolbarBottom + 18);
+    const visibleBottom = Math.min(rect.bottom, window.innerHeight - 18);
+    const hasVisibleArea = visibleBottom > visibleTop;
+    const centerScreenY = hasVisibleArea
+        ? (visibleTop + visibleBottom) / 2
+        : rect.top + Math.min(rect.height * 0.35, 320);
+
+    const internalCenterY = (centerScreenY - rect.top) / Math.max(pageScale, 0.001);
+    const offset = (spawnCount % 6) * 18;
+    const maxTop = Math.max(24, PAGE_HEIGHT - height - 24);
+    const top = Math.max(24, Math.min(internalCenterY - height / 2 + offset, maxTop));
+    const maxLeft = Math.max(24, PAGE_WIDTH - width - 24);
+    const left = Math.max(24, Math.min(60 + offset, maxLeft));
+
+    return { left, top };
+}
+
 function createBaseElement(type) {
     recordHistory();
 
@@ -949,13 +1049,15 @@ function createBaseElement(type) {
     element.className = "report-element";
     element.dataset.type = type;
 
-    const offset = (spawnCount % 8) * 22;
+    const defaultWidth = 300;
+    const defaultHeight = 100;
+    const position = getSmartSpawnPosition(defaultWidth, defaultHeight);
     spawnCount += 1;
 
-    element.style.left = (60 + offset) + "px";
-    element.style.top = (70 + offset) + "px";
-    element.style.width = "300px";
-    element.style.height = "100px";
+    element.style.left = position.left + "px";
+    element.style.top = position.top + "px";
+    element.style.width = defaultWidth + "px";
+    element.style.height = defaultHeight + "px";
     element.style.zIndex = ++highestZ;
 
     const handle = document.createElement("div");
@@ -1123,6 +1225,7 @@ function addText() {
     bindEditable(text);
     text.focus();
     placeCaretAtEnd(text.querySelector(".editor-line"));
+    syncNumberingControls();
 }
 
 function addHeading(level) {
@@ -1149,8 +1252,164 @@ function addHeading(level) {
     bindEditable(text);
     text.focus();
     placeCaretAtEnd(text.querySelector(".editor-line"));
+    syncNumberingControls();
 }
 
+
+/* =========================
+   グループ別の自動番号
+========================= */
+
+function getSelectedNumberableElement() {
+    if (!selectedElement) return null;
+    const type = selectedElement.dataset.type;
+    if (type !== "text" && type !== "heading") return null;
+    return selectedElement.querySelector(".editable-text") ? selectedElement : null;
+}
+
+function clearAutoNumberLabel(element) {
+    const editable = element?.querySelector(".editable-text");
+    if (!editable) return;
+
+    editable.querySelectorAll(":scope > .editor-line").forEach(line => {
+        line.classList.remove("has-auto-number");
+        delete line.dataset.autoNumberLabel;
+    });
+}
+
+function applyAutoNumberLabel(element, number) {
+    const editable = element?.querySelector(".editable-text");
+    if (!editable) return;
+
+    normalizeEditableLines(editable);
+    clearAutoNumberLabel(element);
+
+    const firstLine = editable.querySelector(":scope > .editor-line");
+    if (!firstLine) return;
+
+    firstLine.classList.add("has-auto-number");
+    firstLine.dataset.autoNumberLabel = `${number}.`;
+}
+
+function collectNumberGroups() {
+    const groups = new Set();
+    pagesContainer.querySelectorAll('.report-element[data-auto-number="1"]').forEach(element => {
+        const group = (element.dataset.numberGroup || "").trim();
+        if (group) groups.add(group);
+    });
+    return [...groups].sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+function refreshNumberGroupList() {
+    if (!numberGroupList) return;
+    numberGroupList.replaceChildren();
+
+    collectNumberGroups().forEach(group => {
+        const option = document.createElement("option");
+        option.value = group;
+        numberGroupList.appendChild(option);
+    });
+}
+
+function refreshAutoNumbering() {
+    const counters = new Map();
+    const stages = getPageStages();
+    const ordered = [];
+
+    pagesContainer.querySelectorAll('.report-element[data-type="text"], .report-element[data-type="heading"]').forEach(clearAutoNumberLabel);
+
+    stages.forEach((stage, pageIndex) => {
+        const pageElement = stage.querySelector(".report-page");
+        if (!pageElement) return;
+
+        [...pageElement.querySelectorAll(":scope > .report-element")]
+            .filter(element => element.dataset.autoNumber === "1")
+            .forEach((element, domIndex) => {
+                ordered.push({
+                    element,
+                    pageIndex,
+                    top: parseFloat(element.style.top) || 0,
+                    left: parseFloat(element.style.left) || 0,
+                    domIndex
+                });
+            });
+    });
+
+    ordered.sort((a, b) =>
+        a.pageIndex - b.pageIndex ||
+        a.top - b.top ||
+        a.left - b.left ||
+        a.domIndex - b.domIndex
+    );
+
+    ordered.forEach(item => {
+        const group = (item.element.dataset.numberGroup || "既定").trim() || "既定";
+        item.element.dataset.numberGroup = group;
+        const next = (counters.get(group) || 0) + 1;
+        counters.set(group, next);
+        applyAutoNumberLabel(item.element, next);
+    });
+
+    refreshNumberGroupList();
+    syncNumberingControls();
+}
+
+function toggleAutoNumbering() {
+    const element = getSelectedNumberableElement();
+    if (!element) return;
+
+    recordHistory();
+    const enabled = element.dataset.autoNumber === "1";
+
+    if (enabled) {
+        delete element.dataset.autoNumber;
+        delete element.dataset.numberGroup;
+        clearAutoNumberLabel(element);
+    } else {
+        const group = (numberGroupInput?.value || "").trim() || "既定";
+        element.dataset.autoNumber = "1";
+        element.dataset.numberGroup = group;
+    }
+
+    refreshAutoNumbering();
+}
+
+function changeNumberGroup() {
+    const element = getSelectedNumberableElement();
+    if (!element || element.dataset.autoNumber !== "1") return;
+
+    const group = (numberGroupInput?.value || "").trim() || "既定";
+    if (element.dataset.numberGroup === group) return;
+
+    recordHistory();
+    element.dataset.numberGroup = group;
+    if (numberGroupInput) numberGroupInput.value = group;
+    refreshAutoNumbering();
+}
+
+function syncNumberingControls() {
+    const element = getSelectedNumberableElement();
+    const enabled = Boolean(element);
+    const numbered = Boolean(element && element.dataset.autoNumber === "1");
+
+    if (numberGroupInput) {
+        numberGroupInput.disabled = !enabled;
+        if (enabled) {
+            numberGroupInput.value = numbered
+                ? (element.dataset.numberGroup || "既定")
+                : numberGroupInput.value;
+        } else {
+            numberGroupInput.value = "";
+        }
+    }
+
+    if (autoNumberButton) {
+        autoNumberButton.disabled = !enabled;
+        autoNumberButton.classList.toggle("is-active", numbered);
+        autoNumberButton.setAttribute("aria-pressed", String(numbered));
+        autoNumberButton.textContent = numbered ? "1. 自動番号 ON" : "1. 自動番号";
+    }
+}
 
 /* =========================
    行単位の段落・インデント操作
@@ -2170,6 +2429,9 @@ function setupDrag(element, handle) {
 
         function end() {
             element.classList.remove("dragging", "resisting");
+            if (historyRecorded) {
+                refreshAutoNumbering();
+            }
             document.removeEventListener("pointermove", move);
             document.removeEventListener("pointerup", end);
             document.removeEventListener("pointercancel", end);
@@ -2600,6 +2862,7 @@ function pasteElementFromClipboard() {
     bindElement(clone);
     constrainElementToPage(clone);
     selectElement(clone);
+    refreshAutoNumbering();
 
     /* 連続Ctrl+Vで少しずつずらす */
     elementClipboard.style.left = clone.style.left;
@@ -2636,6 +2899,7 @@ function nudgeSelectedElement(dx, dy) {
         0,
         Math.min(top + dy, PAGE_HEIGHT - height)
     ) + "px";
+    refreshAutoNumbering();
 }
 
 function deleteElement() {
@@ -2648,6 +2912,7 @@ function deleteElement() {
     selectedElement = null;
     lastTextRange = null;
     lastRangeEditable = null;
+    refreshAutoNumbering();
 }
 
 function copyElement() {
@@ -2683,6 +2948,12 @@ function sendBack() {
 
 function sanitizeEditableHtml(editable) {
     const clone = editable.cloneNode(true);
+
+    /* 自動番号はグループ情報から再計算するため、表示用の番号はHTMLへ固定保存しない。 */
+    clone.querySelectorAll(".editor-line.has-auto-number").forEach(line => {
+        line.classList.remove("has-auto-number");
+        delete line.dataset.autoNumberLabel;
+    });
 
     clone.querySelectorAll("script, style, iframe, object, embed").forEach(node => node.remove());
 
@@ -2721,6 +2992,11 @@ function serializeElement(element) {
         data.headingLevel = Number(element.dataset.headingLevel);
     }
 
+    if (element.dataset.autoNumber === "1") {
+        data.autoNumber = true;
+        data.numberGroup = (element.dataset.numberGroup || "既定").trim() || "既定";
+    }
+
     if (editable) {
         data.text = editable.innerText;
         data.html = sanitizeEditableHtml(editable);
@@ -2754,6 +3030,7 @@ function serializeElement(element) {
 }
 
 function serializeReport() {
+    refreshAutoNumbering();
     const pages = getPageStages().map(stage => {
         const pageElement = stage.querySelector(".report-page");
 
@@ -2868,6 +3145,10 @@ function restoreElementOnPage(pageElement, data) {
         if (data.headingLevel) {
             element.dataset.headingLevel = data.headingLevel;
         }
+        if (data.autoNumber) {
+            element.dataset.autoNumber = "1";
+            element.dataset.numberGroup = (data.numberGroup || "既定").trim() || "既定";
+        }
 
         const editable = document.createElement("div");
         editable.className = "editable-text";
@@ -2974,6 +3255,7 @@ function restoreSavedReport(report) {
 
     setActivePage(0);
     selectElement(null);
+    refreshAutoNumbering();
     undoStack.length = 0;
     redoStack.length = 0;
     updateHistoryButtons();

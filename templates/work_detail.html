@@ -396,6 +396,11 @@ function renderElement(data, pageElement) {
     element.style.zIndex =
         data.z || 1;
 
+    if (data.autoNumber) {
+        element.dataset.autoNumber = "1";
+        element.dataset.numberGroup = (data.numberGroup || "既定").trim() || "既定";
+    }
+
 
     /* テキスト・見出し */
 
@@ -501,6 +506,67 @@ function renderElement(data, pageElement) {
 
 
 /* =========================
+   グループ別自動番号表示
+========================= */
+function clearPreviewAutoNumber(element) {
+    const content = element?.querySelector(".report-text");
+    if (!content) return;
+    content.querySelectorAll(":scope > .editor-line").forEach(line => {
+        line.classList.remove("has-auto-number");
+        delete line.dataset.autoNumberLabel;
+    });
+}
+
+function applyPreviewAutoNumber(element, number) {
+    const content = element?.querySelector(".report-text");
+    if (!content) return;
+    normalizePreviewLines(content);
+    clearPreviewAutoNumber(element);
+    const firstLine = content.querySelector(":scope > .editor-line");
+    if (!firstLine) return;
+    firstLine.classList.add("has-auto-number");
+    firstLine.dataset.autoNumberLabel = `${number}.`;
+}
+
+function refreshPreviewAutoNumbering() {
+    const counters = new Map();
+    const ordered = [];
+
+    pagesContainer.querySelectorAll('.report-element[data-auto-number="1"]').forEach(clearPreviewAutoNumber);
+
+    [...pagesContainer.querySelectorAll(".report-stage")].forEach((stage, pageIndex) => {
+        const pageElement = stage.querySelector(".report-page");
+        if (!pageElement) return;
+
+        [...pageElement.querySelectorAll(":scope > .report-element")]
+            .filter(element => element.dataset.autoNumber === "1")
+            .forEach((element, domIndex) => {
+                ordered.push({
+                    element,
+                    pageIndex,
+                    top: parseFloat(element.style.top) || 0,
+                    left: parseFloat(element.style.left) || 0,
+                    domIndex
+                });
+            });
+    });
+
+    ordered.sort((a, b) =>
+        a.pageIndex - b.pageIndex ||
+        a.top - b.top ||
+        a.left - b.left ||
+        a.domIndex - b.domIndex
+    );
+
+    ordered.forEach(item => {
+        const group = (item.element.dataset.numberGroup || "既定").trim() || "既定";
+        const next = (counters.get(group) || 0) + 1;
+        counters.set(group, next);
+        applyPreviewAutoNumber(item.element, next);
+    });
+}
+
+/* =========================
    報告書を表示
 ========================= */
 
@@ -569,6 +635,8 @@ function createReportPage(pageData, index) {
 
 normalizeReportPages(reportData)
     .forEach(createReportPage);
+
+refreshPreviewAutoNumbering();
 
 
 /* =========================

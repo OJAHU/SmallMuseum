@@ -529,3 +529,29 @@ a {
     top: 0;
     font-weight: bold;
 }
+
+
+/* =========================
+   グループ別自動番号表示
+========================= */
+.report-text > .editor-line.has-auto-number {
+    padding-left: 2.35em;
+}
+
+.report-text > .editor-line.has-auto-number::after {
+    content: attr(data-auto-number-label);
+    position: absolute;
+    left: 0;
+    top: 0;
+    min-width: 1.9em;
+    font-weight: inherit;
+    text-align: right;
+}
+
+.report-text > .editor-line.is-bullet.has-auto-number {
+    padding-left: 3.7em;
+}
+
+.report-text > .editor-line.is-bullet.has-auto-number::before {
+    left: 2.35em;
+}
