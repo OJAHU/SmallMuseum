@@ -965,3 +965,172 @@ select {
         gap: 50px;
     }
 }
+
+
+/* =========================
+   複数ページ向けクイックツール
+========================= */
+
+.editor-canvas-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 158px;
+    align-items: start;
+    gap: 14px;
+    width: 100%;
+}
+
+.editor-canvas-layout .document-workspace {
+    min-width: 0;
+}
+
+.editor-quick-tools {
+    position: sticky;
+    top: 190px;
+    z-index: 850;
+    padding: 14px 12px;
+    color: #3b2a1c;
+    background: rgba(255, 250, 240, 0.97);
+    border: 1px solid #bca77c;
+    border-top: 4px solid var(--gold);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(45, 36, 27, 0.16);
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+}
+
+.quick-tools-label {
+    margin: 0 0 3px;
+    color: #9b7838;
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.editor-quick-tools h3 {
+    margin: 0 0 9px;
+    color: #3b2a1c;
+    font-size: 15px;
+}
+
+.quick-page-indicator {
+    display: block;
+    margin-bottom: 10px;
+    padding: 5px 7px;
+    color: #684f26;
+    background: #f3e5c4;
+    border: 1px solid #dbc28c;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.quick-tools-buttons {
+    display: grid;
+    gap: 6px;
+}
+
+.editor-quick-tools button {
+    width: 100%;
+    min-height: 36px;
+    padding: 7px 8px;
+    color: #3b2a1c;
+    background: #fffdf7;
+    border: 1px solid #bca77c;
+    border-radius: 5px;
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.editor-quick-tools button:hover:not(:disabled),
+.editor-quick-tools button:focus-visible:not(:disabled) {
+    background: #ead9b9;
+    border-color: var(--gold);
+    outline: none;
+}
+
+.editor-quick-tools button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.editor-quick-tools .quick-date-button {
+    margin-top: 10px;
+    color: #513b1d;
+    background: #f8efd9;
+    border-color: #c8a95e;
+    font-weight: bold;
+    line-height: 1.4;
+}
+
+.quick-tools-help {
+    margin: 10px 0 0;
+    color: #756651;
+    font-size: 10px;
+    line-height: 1.55;
+}
+
+@media (max-width: 1120px) {
+    .editor-canvas-layout {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .editor-quick-tools {
+        position: sticky;
+        top: 80px;
+        z-index: 950;
+        order: -1;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 8px;
+        padding: 8px;
+        border-top-width: 2px;
+        border-radius: 6px;
+    }
+
+    .quick-tools-label,
+    .editor-quick-tools h3,
+    .quick-tools-help {
+        display: none;
+    }
+
+    .quick-page-indicator {
+        flex: 0 0 auto;
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .quick-tools-buttons {
+        display: flex;
+        flex: 1 1 auto;
+        gap: 5px;
+        overflow-x: auto;
+    }
+
+    .editor-quick-tools button {
+        width: auto;
+        flex: 0 0 auto;
+        min-height: 34px;
+        white-space: nowrap;
+    }
+
+    .editor-quick-tools .quick-date-button {
+        margin-top: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .editor-quick-tools {
+        top: 70px;
+        overflow-x: auto;
+    }
+
+    .quick-page-indicator {
+        font-size: 10px;
+    }
+}
