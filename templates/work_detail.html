@@ -294,6 +294,11 @@ function createTextElement(data) {
             data.textAlign;
     }
 
+    if (data.indentLevel !== undefined && data.indentLevel !== null) {
+        const indentLevel = Math.max(0, Math.min(5, Number(data.indentLevel) || 0));
+        content.style.paddingLeft = (8 + indentLevel * 28) + "px";
+    }
+
 
     return content;
 }

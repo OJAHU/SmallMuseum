@@ -258,12 +258,43 @@
                         <button class="text-style-button" type="button" onclick="toggleBold()" title="選択した文字を太字"><strong>B</strong></button>
                         <button class="text-style-button" type="button" onclick="toggleUnderline()" title="選択した文字に下線"><u>U</u></button>
                         <button class="text-style-button" type="button" onclick="toggleStrikeThrough()" title="選択した文字に取り消し線"><s>S</s></button>
+                        <button
+                            class="append-today-button"
+                            type="button"
+                            onclick="appendTodayToSelectedText()"
+                            disabled
+                            title="選択中のテキストまたは見出しの末尾へ今日の日付を追加"
+                        >
+                            📅 今日の日付
+                        </button>
                     </div>
 
                     <div class="toolbar-group">
                         <button type="button" onclick="setAlign('left')">左</button>
                         <button type="button" onclick="setAlign('center')">中央</button>
                         <button type="button" onclick="setAlign('right')">右</button>
+                    </div>
+
+                    <div class="toolbar-group indent-group" aria-label="インデント調整">
+                        <button
+                            id="indent-decrease-button"
+                            type="button"
+                            onclick="changeIndent(-1)"
+                            disabled
+                            title="インデントを1段階浅くする"
+                        >
+                            ⇤ インデント
+                        </button>
+                        <span id="indent-indicator" class="indent-indicator" aria-live="polite">0 / 5</span>
+                        <button
+                            id="indent-increase-button"
+                            type="button"
+                            onclick="changeIndent(1)"
+                            disabled
+                            title="インデントを1段階深くする"
+                        >
+                            インデント ⇥
+                        </button>
                     </div>
 
                     <div class="toolbar-group">
@@ -282,33 +313,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <aside class="editor-quick-tools" aria-label="ページ編集クイックツール">
-                        <p class="quick-tools-label">Quick Tools</p>
-                        <h3>クイック追加</h3>
-                        <span id="quick-page-indicator" class="quick-page-indicator">1ページ目へ追加</span>
-
-                        <div class="quick-tools-buttons">
-                            <button type="button" onclick="quickAddText()">＋ テキスト</button>
-                            <button type="button" onclick="quickAddHeading(1)">＋ 見出し1</button>
-                            <button type="button" onclick="quickAddHeading(2)">＋ 見出し2</button>
-                            <button type="button" onclick="quickAddHeading(3)">＋ 見出し3</button>
-                        </div>
-
-                        <button
-                            class="quick-date-button append-today-button"
-                            type="button"
-                            onclick="appendTodayToSelectedText()"
-                            disabled
-                            title="選択中のテキストまたは見出しの末尾へ今日の日付を追加"
-                        >
-                            📅 今日の日付を末尾に追加
-                        </button>
-
-                        <p class="quick-tools-help">
-                            追加ボタンは、画面中央に近い用紙へ追加します。日付は選択中のテキスト・見出しに追加します。
-                        </p>
-                    </aside>
                 </div>
 
                 <input
@@ -408,7 +412,6 @@ const redoButton = document.getElementById("redo-button");
 const addPageButton = document.getElementById("add-page-button");
 const deletePageButton = document.getElementById("delete-page-button");
 const pageIndicator = document.getElementById("page-indicator");
-const quickPageIndicator = document.getElementById("quick-page-indicator");
 
 let page = pagesContainer.querySelector(".report-page");
 let pageStage = pagesContainer.querySelector(".report-page-stage");
@@ -422,6 +425,13 @@ const RESISTANCE_DISTANCE = 14;
 const MAX_HISTORY = 60;
 const TEXT_HISTORY_INTERVAL = 700;
 const MAX_STORED_IMAGE_EDGE = 2000;
+const MAX_INDENT_LEVEL = 5;
+const TEXT_INDENT_STEP = 28;
+const TEXT_BASE_PADDING = 8;
+
+const indentDecreaseButton = document.getElementById("indent-decrease-button");
+const indentIncreaseButton = document.getElementById("indent-increase-button");
+const indentIndicator = document.getElementById("indent-indicator");
 
 let pageScale = 1;
 let selectedElement = null;
@@ -461,10 +471,6 @@ function updatePageControls() {
 
     if (pageIndicator) {
         pageIndicator.textContent = `${activePageIndex + 1} / ${count} ページ`;
-    }
-
-    if (quickPageIndicator && !quickPageIndicator.dataset.viewportTracking) {
-        quickPageIndicator.textContent = `${activePageIndex + 1}ページ目へ追加`;
     }
 
     if (deletePageButton) {
@@ -1060,6 +1066,7 @@ function addText() {
     text.style.fontSize = "16px";
 
     element.appendChild(text);
+    applyIndentToElement(element, 0);
     bindEditable(text);
     text.focus();
 }
@@ -1085,91 +1092,106 @@ function addHeading(level) {
     text.style.fontWeight = "bold";
 
     element.appendChild(text);
+    applyIndentToElement(element, 0);
     bindEditable(text);
     text.focus();
 }
 
 
 /* =========================
-   複数ページ用クイックツール
+   テキスト補助操作
 ========================= */
 
-function getNearestVisiblePageIndex() {
-    const stages = getPageStages();
+function clampIndentLevel(value) {
+    const numeric = Number(value);
 
-    if (stages.length === 0) {
+    if (!Number.isFinite(numeric)) {
         return 0;
     }
 
-    const viewportCenter = window.innerHeight / 2;
-    let bestIndex = activePageIndex;
-    let bestDistance = Infinity;
-
-    stages.forEach((stage, index) => {
-        const rect = stage.getBoundingClientRect();
-        const stageCenter = rect.top + rect.height / 2;
-        const distance = Math.abs(stageCenter - viewportCenter);
-
-        if (distance < bestDistance) {
-            bestDistance = distance;
-            bestIndex = index;
-        }
-    });
-
-    return bestIndex;
+    return Math.max(0, Math.min(MAX_INDENT_LEVEL, Math.round(numeric)));
 }
 
-function updateQuickPageIndicatorFromViewport() {
-    if (!quickPageIndicator) {
+function getSelectedTextElement() {
+    if (!selectedElement) {
+        return null;
+    }
+
+    const type = selectedElement.dataset.type;
+
+    if (type !== "text" && type !== "heading") {
+        return null;
+    }
+
+    return selectedElement.querySelector(".editable-text")
+        ? selectedElement
+        : null;
+}
+
+function getIndentLevel(element = selectedElement) {
+    if (!element) {
+        return 0;
+    }
+
+    return clampIndentLevel(element.dataset.indentLevel || 0);
+}
+
+function applyIndentToElement(element, level) {
+    if (!element) {
         return;
     }
 
-    const index = getNearestVisiblePageIndex();
-    quickPageIndicator.dataset.viewportTracking = "1";
-    quickPageIndicator.textContent = `${index + 1}ページ目へ追加`;
-}
+    const editable = element.querySelector(".editable-text");
 
-function activateNearestVisiblePage() {
-    const index = getNearestVisiblePageIndex();
-    setActivePage(index);
-    updateQuickPageIndicatorFromViewport();
-}
-
-function quickAddText() {
-    activateNearestVisiblePage();
-    addText();
-}
-
-function quickAddHeading(level) {
-    activateNearestVisiblePage();
-    addHeading(level);
-}
-
-let quickToolsScrollQueued = false;
-
-window.addEventListener("scroll", function() {
-    if (quickToolsScrollQueued) {
+    if (!editable) {
         return;
     }
 
-    quickToolsScrollQueued = true;
+    const normalized = clampIndentLevel(level);
+    element.dataset.indentLevel = String(normalized);
+    editable.style.paddingLeft = (TEXT_BASE_PADDING + normalized * TEXT_INDENT_STEP) + "px";
+}
 
-    requestAnimationFrame(() => {
-        updateQuickPageIndicatorFromViewport();
-        quickToolsScrollQueued = false;
-    });
-}, { passive: true });
+function changeIndent(delta) {
+    const element = getSelectedTextElement();
+
+    if (!element) {
+        return;
+    }
+
+    const current = getIndentLevel(element);
+    const next = clampIndentLevel(current + delta);
+
+    if (next === current) {
+        syncTextQuickControls();
+        return;
+    }
+
+    recordHistory();
+    applyIndentToElement(element, next);
+    syncTextQuickControls();
+}
 
 function syncTextQuickControls() {
-    const canAppendDate = Boolean(
-        selectedElement &&
-        (selectedElement.dataset.type === "text" || selectedElement.dataset.type === "heading") &&
-        selectedElement.querySelector(".editable-text")
-    );
+    const textElement = getSelectedTextElement();
+    const enabled = Boolean(textElement);
+    const level = enabled ? getIndentLevel(textElement) : 0;
 
     document.querySelectorAll(".append-today-button").forEach(button => {
-        button.disabled = !canAppendDate;
+        button.disabled = !enabled;
     });
+
+    if (indentIndicator) {
+        indentIndicator.textContent = `${level} / ${MAX_INDENT_LEVEL}`;
+    }
+
+    if (indentDecreaseButton) {
+        indentDecreaseButton.disabled = !enabled || level <= 0;
+    }
+
+    if (indentIncreaseButton) {
+        indentIncreaseButton.disabled = !enabled || level >= MAX_INDENT_LEVEL;
+    }
 }
 
 function formatTodayJapanese(date = new Date()) {
@@ -1177,17 +1199,13 @@ function formatTodayJapanese(date = new Date()) {
 }
 
 function appendTodayToSelectedText() {
-    if (!selectedElement) {
+    const element = getSelectedTextElement();
+
+    if (!element) {
         return;
     }
 
-    const type = selectedElement.dataset.type;
-
-    if (type !== "text" && type !== "heading") {
-        return;
-    }
-
-    const editable = selectedElement.querySelector(".editable-text");
+    const editable = element.querySelector(".editable-text");
 
     if (!editable) {
         return;
@@ -1204,7 +1222,7 @@ function appendTodayToSelectedText() {
     );
 
     editable.focus();
-    selectElement(selectedElement);
+    selectElement(element);
 
     const range = document.createRange();
     range.selectNodeContents(editable);
@@ -2450,6 +2468,7 @@ function serializeElement(element) {
         data.fontWeight = editable.style.fontWeight;
         data.textDecoration = editable.style.textDecoration;
         data.textAlign = editable.style.textAlign;
+        data.indentLevel = getIndentLevel(element);
     }
 
     if (type === "image") {
@@ -2607,6 +2626,7 @@ function restoreElementOnPage(pageElement, data) {
         if (data.textAlign) editable.style.textAlign = data.textAlign;
 
         element.appendChild(editable);
+        applyIndentToElement(element, data.indentLevel || 0);
     } else if (data.type === "image") {
         element.classList.add("report-image");
 
