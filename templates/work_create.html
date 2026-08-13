@@ -75,7 +75,13 @@
             <p>作品の基本情報と、展示する作品報告書を作成してください。</p>
         </div>
 
-        <form class="work-form" method="post">
+        <form
+            class="work-form"
+            method="post"
+            data-mode="{{ mode }}"
+            data-work-id="{{ work.id if work else '' }}"
+            data-save-url="{% if mode == 'edit' %}{{ url_for('work_edit', room_id=room.id, work_id=work.id) }}{% else %}{{ url_for('work_create', room_id=room.id) }}{% endif %}"
+        >
             <div class="basic-info-grid">
                 <div class="form-item full-width">
                     <label for="title">題名</label>
@@ -161,6 +167,21 @@
                 </div>
 
                 <div class="editor-toolbar">
+                    <div class="toolbar-group save-group">
+                        <button
+                            id="manual-save-button"
+                            class="manual-save-button"
+                            type="button"
+                            onclick="saveWork({ manual: true })"
+                            title="この画面のまま保存 (Ctrl+S)"
+                        >
+                            💾 保存
+                        </button>
+                        <span id="save-status" class="save-status" aria-live="polite">
+                            {% if mode == "edit" %}保存済み{% else %}未保存{% endif %}
+                        </span>
+                    </div>
+
                     <div class="toolbar-group history-group">
                         <button id="undo-button" type="button" onclick="undoEditor()" title="元に戻す (Ctrl+Z)">↶ 元に戻す</button>
                         <button id="redo-button" type="button" onclick="redoEditor()" title="やり直す (Ctrl+Y)">↷ やり直す</button>
@@ -405,13 +426,15 @@
 
 
                 <button
+                    id="bottom-save-button"
                     class="submit-button"
-                    type="submit"
+                    type="button"
+                    onclick="saveWork({ manual: true })"
                 >
                     {% if mode == "edit" %}
                         変更を保存する
                     {% else %}
-                        作品を作成する
+                        作品を保存する
                     {% endif %}
                 </button>
 
@@ -452,6 +475,11 @@ const redoButton = document.getElementById("redo-button");
 const addPageButton = document.getElementById("add-page-button");
 const deletePageButton = document.getElementById("delete-page-button");
 const pageIndicator = document.getElementById("page-indicator");
+const workForm = document.querySelector(".work-form");
+const saveStatus = document.getElementById("save-status");
+const manualSaveButton = document.getElementById("manual-save-button");
+const bottomSaveButton = document.getElementById("bottom-save-button");
+const titleInput = document.getElementById("title");
 
 let page = pagesContainer.querySelector(".report-page");
 let pageStage = pagesContainer.querySelector(".report-page-stage");
@@ -485,6 +513,18 @@ let historyRestoring = false;
 let lastTextHistoryAt = 0;
 let lastTextHistoryTarget = null;
 let elementClipboard = null;
+
+const AUTOSAVE_DELAY = 1200;
+let saveUrl = workForm?.dataset.saveUrl || window.location.href;
+let currentWorkId = workForm?.dataset.workId || "";
+let autosaveTimer = null;
+let saveInFlight = false;
+let saveRequestedWhileSaving = false;
+let dirty = false;
+let lastSavedSignature = "";
+let autosaveReady = false;
+let autosaveMutationSuppressed = false;
+let editorMutationObserver = null;
 
 const undoStack = [];
 const redoStack = [];
@@ -779,6 +819,16 @@ document.addEventListener("keydown", function(event) {
     const key = event.key.toLowerCase();
 
     /* -------------------------
+       保存
+       入力欄・報告書の文字編集中でも Ctrl+S を必ず奪う
+    ------------------------- */
+    if (modifier && key === "s") {
+        event.preventDefault();
+        saveWork({ manual: true });
+        return;
+    }
+
+    /* -------------------------
        Undo / Redo
     ------------------------- */
     if (modifier && key === "z" && !event.shiftKey) {
@@ -847,12 +897,6 @@ document.addEventListener("keydown", function(event) {
             event.preventDefault();
             pasteElementFromClipboard();
         }
-        return;
-    }
-
-    if (modifier && key === "s") {
-        event.preventDefault();
-        document.querySelector(".work-form").requestSubmit();
         return;
     }
 
@@ -3047,12 +3091,50 @@ function serializeReport() {
     };
 }
 
-document.querySelector(".work-form").addEventListener("submit", function(event) {
-    const report = serializeReport();
+function setSaveStatus(message, state = "") {
+    if (!saveStatus) {
+        return;
+    }
+
+    saveStatus.textContent = message;
+    saveStatus.dataset.state = state;
+}
+
+function setSaveButtonsDisabled(disabled) {
+    if (manualSaveButton) {
+        manualSaveButton.disabled = disabled;
+    }
+
+    if (bottomSaveButton) {
+        bottomSaveButton.disabled = disabled;
+    }
+}
+
+function buildSavePayload({ silent = false } = {}) {
+    const title = (titleInput?.value || "").trim();
+
+    if (!title) {
+        if (!silent) {
+            setSaveStatus("題名を入力すると保存できます", "warning");
+            titleInput?.focus();
+        }
+        return null;
+    }
+
+    let report;
+
+    /* serializeReport内の表示更新を「ユーザーの変更」と誤認しないようにする。 */
+    autosaveMutationSuppressed = true;
+    try {
+        report = serializeReport();
+        editorMutationObserver?.takeRecords();
+    } finally {
+        autosaveMutationSuppressed = false;
+    }
 
     /*
      * 古いBase64画像が残った状態で保存すると再び巨大POSTになるため、
-     * 念のため送信前に検出する。
+     * 念のため保存前に検出する。
      */
     const embeddedImage = report.pages.some(pageData =>
         pageData.elements.some(item =>
@@ -3063,15 +3145,145 @@ document.querySelector(".work-form").addEventListener("submit", function(event) 
     );
 
     if (embeddedImage) {
-        event.preventDefault();
-        setImageMessage(
-            "古い形式の埋め込み画像が残っています。該当画像を削除して、もう一度追加してから保存してください。",
-            true
-        );
-        return;
+        if (!silent) {
+            setImageMessage(
+                "古い形式の埋め込み画像が残っています。該当画像を削除して、もう一度追加してから保存してください。",
+                true
+            );
+            setSaveStatus("保存できません", "error");
+        }
+        return null;
     }
 
     contentInput.value = JSON.stringify(report);
+
+    const formData = new FormData(workForm);
+    const signature = JSON.stringify({
+        title: formData.get("title") || "",
+        tags: formData.get("tags") || "",
+        progress: formData.get("progress") || "0",
+        interest: formData.get("interest") || "50",
+        content_json: formData.get("content_json") || "",
+        reference_sites: formData.get("reference_sites") || ""
+    });
+
+    return { formData, signature };
+}
+
+function markDirty() {
+    if (!autosaveReady) {
+        return;
+    }
+
+    dirty = true;
+    setSaveStatus("未保存の変更があります", "dirty");
+
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+        saveWork({ automatic: true });
+    }, AUTOSAVE_DELAY);
+}
+
+async function saveWork({ manual = false, automatic = false } = {}) {
+    clearTimeout(autosaveTimer);
+
+    if (saveInFlight) {
+        saveRequestedWhileSaving = true;
+        return false;
+    }
+
+    const payload = buildSavePayload({ silent: automatic && !manual });
+
+    if (!payload) {
+        return false;
+    }
+
+    if (!dirty && payload.signature === lastSavedSignature) {
+        setSaveStatus("保存済み", "saved");
+        return true;
+    }
+
+    saveInFlight = true;
+    saveRequestedWhileSaving = false;
+    dirty = false;
+    setSaveButtonsDisabled(true);
+    setSaveStatus(automatic ? "自動保存中…" : "保存中…", "saving");
+
+    try {
+        const response = await fetch(saveUrl, {
+            method: "POST",
+            body: payload.formData,
+            headers: {
+                "Accept": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            credentials: "same-origin"
+        });
+
+        let result = {};
+        try {
+            result = await response.json();
+        } catch (error) {
+            throw new Error("保存結果を読み取れませんでした。");
+        }
+
+        if (!response.ok || !result.ok) {
+            throw new Error(result.error || "保存に失敗しました。");
+        }
+
+        if (result.work_id) {
+            currentWorkId = String(result.work_id);
+            workForm.dataset.workId = currentWorkId;
+        }
+
+        if (result.edit_url) {
+            saveUrl = result.edit_url;
+            workForm.dataset.saveUrl = result.edit_url;
+            workForm.action = result.edit_url;
+
+            /* 新規作品の最初の保存後は、再読み込みしても編集画面へ戻れるURLにする。 */
+            if (window.location.pathname !== result.edit_url) {
+                window.history.replaceState(null, "", result.edit_url);
+            }
+        }
+
+        lastSavedSignature = payload.signature;
+
+        if (dirty || saveRequestedWhileSaving) {
+            setSaveStatus("新しい変更を保存待ち", "dirty");
+        } else {
+            const now = new Date();
+            const time = now.toLocaleTimeString("ja-JP", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            });
+            setSaveStatus(`保存済み ${time}`, "saved");
+        }
+
+        return true;
+    } catch (error) {
+        dirty = true;
+        setSaveStatus(error.message || "保存に失敗しました", "error");
+        return false;
+    } finally {
+        saveInFlight = false;
+        setSaveButtonsDisabled(false);
+
+        if (dirty || saveRequestedWhileSaving) {
+            saveRequestedWhileSaving = false;
+            clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(() => {
+                saveWork({ automatic: true });
+            }, 700);
+        }
+    }
+}
+
+/* Enterなどによる通常submitでもページ遷移させず、この保存処理へ統一する。 */
+workForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+    saveWork({ manual: true });
 });
 
 bindAllElements();
@@ -3272,6 +3484,85 @@ restoreSavedReport(
 requestAnimationFrame(() => {
     updatePageScale();
     syncTextQuickControls();
+
+    /* 初期復元が終わってから変更監視を開始する。 */
+    const initialPayload = buildSavePayload({ silent: true });
+    if (workForm?.dataset.mode === "edit" && initialPayload) {
+        lastSavedSignature = initialPayload.signature;
+        setSaveStatus("保存済み", "saved");
+    } else if (workForm?.dataset.mode === "create") {
+        setSaveStatus("題名入力後に自動保存", "warning");
+    }
+
+    autosaveReady = true;
+});
+
+/* 基本情報・参考サイト・contenteditableの入力を自動保存対象にする。 */
+workForm.addEventListener("input", function(event) {
+    if (event.target === contentInput) {
+        return;
+    }
+    markDirty();
+});
+
+workForm.addEventListener("change", function(event) {
+    if (event.target === contentInput) {
+        return;
+    }
+    markDirty();
+});
+
+/* ドラッグ、リサイズ、文字装飾などDOM属性として変わる編集も拾う。 */
+editorMutationObserver = new MutationObserver(mutations => {
+    if (!autosaveReady || autosaveMutationSuppressed) {
+        return;
+    }
+
+    const meaningful = mutations.some(mutation => {
+        if (mutation.type === "characterData" || mutation.type === "childList") {
+            return true;
+        }
+
+        if (mutation.type === "attributes") {
+            return [
+                "style",
+                "data-auto-number",
+                "data-number-group",
+                "data-shape-kind",
+                "data-url"
+            ].includes(mutation.attributeName);
+        }
+
+        return false;
+    });
+
+    if (meaningful) {
+        markDirty();
+    }
+});
+
+editorMutationObserver.observe(pagesContainer, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: [
+        "style",
+        "data-auto-number",
+        "data-number-group",
+        "data-shape-kind",
+        "data-url"
+    ]
+});
+
+/* 自動保存が終わる前に閉じようとした場合だけ警告する。 */
+window.addEventListener("beforeunload", function(event) {
+    if (!dirty && !saveInFlight) {
+        return;
+    }
+
+    event.preventDefault();
+    event.returnValue = "";
 });
 
 </script>

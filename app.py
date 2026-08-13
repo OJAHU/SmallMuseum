@@ -655,11 +655,28 @@ def work_create(room_id):
         interest = request.form.get("interest", "50")
 
         if not title:
+            is_ajax_save = (
+                request.headers.get("X-Requested-With") == "XMLHttpRequest"
+                or "application/json" in request.headers.get("Accept", "")
+            )
             conn.close()
+
+            if is_ajax_save:
+                return jsonify(
+                    ok=False,
+                    error="作品名を入力してください"
+                ), 400
 
             return render_template(
                 "work_create.html",
                 room=room,
+                work=None,
+                mode="create",
+                report={
+                    "pageWidth": 794,
+                    "pageHeight": 1123,
+                    "pages": [{"elements": []}]
+                },
                 error_title="作品名を入力してください"
             )
 
@@ -693,13 +710,39 @@ def work_create(room_id):
             )
         )
 
+        work_id = cur.lastrowid
         conn.commit()
+
+        is_ajax_save = (
+            request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            or "application/json" in request.headers.get("Accept", "")
+        )
+
+        if is_ajax_save:
+            conn.close()
+            return jsonify(
+                ok=True,
+                created=True,
+                work_id=work_id,
+                edit_url=url_for(
+                    "work_edit",
+                    room_id=room_id,
+                    work_id=work_id
+                ),
+                detail_url=url_for(
+                    "work_detail",
+                    room_id=room_id,
+                    work_id=work_id
+                )
+            )
+
         conn.close()
 
         return redirect(
             url_for(
-                "room_detail",
-                room_id=room_id
+                "work_detail",
+                room_id=room_id,
+                work_id=work_id
             )
         )
 
@@ -884,6 +927,18 @@ def work_edit(room_id, work_id):
 
         if not title:
 
+            is_ajax_save = (
+                request.headers.get("X-Requested-With") == "XMLHttpRequest"
+                or "application/json" in request.headers.get("Accept", "")
+            )
+
+            if is_ajax_save:
+                conn.close()
+                return jsonify(
+                    ok=False,
+                    error="作品名を入力してください"
+                ), 400
+
             try:
                 report = json.loads(
                     content_json
@@ -948,6 +1003,30 @@ def work_edit(room_id, work_id):
         )
 
         conn.commit()
+
+        is_ajax_save = (
+            request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            or "application/json" in request.headers.get("Accept", "")
+        )
+
+        if is_ajax_save:
+            conn.close()
+            return jsonify(
+                ok=True,
+                created=False,
+                work_id=work_id,
+                edit_url=url_for(
+                    "work_edit",
+                    room_id=room_id,
+                    work_id=work_id
+                ),
+                detail_url=url_for(
+                    "work_detail",
+                    room_id=room_id,
+                    work_id=work_id
+                )
+            )
+
         conn.close()
 
         return redirect(

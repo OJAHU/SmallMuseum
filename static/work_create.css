@@ -1101,3 +1101,75 @@ select {
 .editable-text > .editor-line.is-bullet.has-auto-number::before {
     left: 2.35em;
 }
+
+/* =========================
+   保存・自動保存
+========================= */
+.save-group {
+    align-items: center;
+}
+
+.editor-toolbar .manual-save-button {
+    color: #fffaf0;
+    background: #3b2f2f;
+    border-color: #3b2f2f;
+    font-weight: bold;
+}
+
+.editor-toolbar .manual-save-button:hover:not(:disabled),
+.editor-toolbar .manual-save-button:focus-visible:not(:disabled) {
+    color: #fffaf0;
+    background: #5a4540;
+    border-color: #5a4540;
+}
+
+.save-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 35px;
+    max-width: 210px;
+    padding: 6px 10px;
+    color: #5f4d3b;
+    background: #fffaf0;
+    border: 1px solid #cdbb98;
+    border-radius: 5px;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.save-status[data-state="saving"] {
+    color: #6f5127;
+    background: #fff5d9;
+    border-color: #d6bc74;
+}
+
+.save-status[data-state="saved"] {
+    color: #35533a;
+    background: #eef6ec;
+    border-color: #9db99f;
+}
+
+.save-status[data-state="dirty"],
+.save-status[data-state="warning"] {
+    color: #71591f;
+    background: #fff8df;
+    border-color: #d8bd68;
+}
+
+.save-status[data-state="error"] {
+    color: #8b1e1e;
+    background: #fff0ed;
+    border-color: #c79b8d;
+}
+
+@media (max-width: 900px) {
+    .save-group {
+        width: 100%;
+    }
+
+    .save-status {
+        max-width: none;
+        flex: 1;
+    }
+}
