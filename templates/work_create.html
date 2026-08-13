@@ -515,9 +515,11 @@ let lastTextHistoryTarget = null;
 let elementClipboard = null;
 
 const AUTOSAVE_DELAY = 1200;
+const FORCE_AUTOSAVE_INTERVAL = 10000;
 let saveUrl = workForm?.dataset.saveUrl || window.location.href;
 let currentWorkId = workForm?.dataset.workId || "";
 let autosaveTimer = null;
+let forceAutosaveIntervalId = null;
 let saveInFlight = false;
 let saveRequestedWhileSaving = false;
 let dirty = false;
@@ -3178,13 +3180,36 @@ function markDirty() {
     dirty = true;
     setSaveStatus("未保存の変更があります", "dirty");
 
+    /*
+     * 通常の自動保存：入力や編集が止まってから1.2秒後に保存する。
+     * 入力が続く場合はこのタイマーが毎回リセットされる。
+     */
     clearTimeout(autosaveTimer);
     autosaveTimer = setTimeout(() => {
         saveWork({ automatic: true });
     }, AUTOSAVE_DELAY);
 }
 
-async function saveWork({ manual = false, automatic = false } = {}) {
+function startForcedAutosave() {
+    if (forceAutosaveIntervalId !== null) {
+        return;
+    }
+
+    /*
+     * 強制自動保存：入力を続けて通常の1.2秒保存が発火しなくても、
+     * 10秒ごとに未保存の変更があれば保存する。
+     * 変更がない場合は通信しない。
+     */
+    forceAutosaveIntervalId = window.setInterval(() => {
+        if (!autosaveReady || !dirty) {
+            return;
+        }
+
+        saveWork({ automatic: true, forced: true });
+    }, FORCE_AUTOSAVE_INTERVAL);
+}
+
+async function saveWork({ manual = false, automatic = false, forced = false } = {}) {
     clearTimeout(autosaveTimer);
 
     if (saveInFlight) {
@@ -3207,7 +3232,10 @@ async function saveWork({ manual = false, automatic = false } = {}) {
     saveRequestedWhileSaving = false;
     dirty = false;
     setSaveButtonsDisabled(true);
-    setSaveStatus(automatic ? "自動保存中…" : "保存中…", "saving");
+    setSaveStatus(
+        forced ? "10秒自動保存中…" : (automatic ? "自動保存中…" : "保存中…"),
+        "saving"
+    );
 
     try {
         const response = await fetch(saveUrl, {
@@ -3495,6 +3523,7 @@ requestAnimationFrame(() => {
     }
 
     autosaveReady = true;
+    startForcedAutosave();
 });
 
 /* 基本情報・参考サイト・contenteditableの入力を自動保存対象にする。 */
