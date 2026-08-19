@@ -341,7 +341,6 @@
                                 placeholder="例：章"
                                 autocomplete="off"
                                 disabled
-                                onchange="changeNumberGroup()"
                             >
                             <datalist id="number-group-list"></datalist>
                         </label>
@@ -527,6 +526,13 @@ let lastSavedSignature = "";
 let autosaveReady = false;
 let autosaveMutationSuppressed = false;
 let editorMutationObserver = null;
+
+/*
+ * 番号グループ名の入力中に自動保存が走っても、
+ * 選択要素側の古い値で入力欄を上書きしないための状態。
+ */
+let numberGroupEditingElement = null;
+let numberGroupHistoryRecorded = false;
 
 const undoStack = [];
 const redoStack = [];
@@ -1420,31 +1426,59 @@ function toggleAutoNumbering() {
     refreshAutoNumbering();
 }
 
-function changeNumberGroup() {
+function changeNumberGroup({ finalize = true } = {}) {
     const element = getSelectedNumberableElement();
-    if (!element || element.dataset.autoNumber !== "1") return;
+    if (!element || element.dataset.autoNumber !== "1" || !numberGroupInput) return;
 
-    const group = (numberGroupInput?.value || "").trim() || "既定";
-    if (element.dataset.numberGroup === group) return;
+    /*
+     * inputイベントごとに要素側へ最新値を反映する。
+     * これにより入力中に自動保存されても古いグループ名は保存されない。
+     */
+    const rawGroup = numberGroupInput.value.trim();
+    const group = finalize ? (rawGroup || "既定") : rawGroup;
 
-    recordHistory();
-    element.dataset.numberGroup = group;
-    if (numberGroupInput) numberGroupInput.value = group;
-    refreshAutoNumbering();
+    if (element.dataset.numberGroup !== group) {
+        if (!numberGroupHistoryRecorded) {
+            recordHistory();
+            numberGroupHistoryRecorded = true;
+        }
+        element.dataset.numberGroup = group;
+    }
+
+    if (finalize) {
+        numberGroupInput.value = group;
+        refreshAutoNumbering();
+    } else {
+        /*
+         * 入力中は番号そのものの再描画だけ行う。
+         * syncNumberingControls() はフォーカス中の入力値を保護する。
+         */
+        refreshAutoNumbering();
+    }
 }
 
 function syncNumberingControls() {
     const element = getSelectedNumberableElement();
     const enabled = Boolean(element);
     const numbered = Boolean(element && element.dataset.autoNumber === "1");
+    const isEditingCurrentGroup = Boolean(
+        numberGroupInput &&
+        document.activeElement === numberGroupInput &&
+        numberGroupEditingElement === element
+    );
 
     if (numberGroupInput) {
         numberGroupInput.disabled = !enabled;
+
+        /*
+         * グループ名を入力している最中は、保存処理などから呼ばれても
+         * data-number-group の値を入力欄へ書き戻さない。
+         */
         if (enabled) {
-            numberGroupInput.value = numbered
-                ? (element.dataset.numberGroup || "既定")
-                : numberGroupInput.value;
-        } else {
+            if (!isEditingCurrentGroup && numbered) {
+                numberGroupInput.value = element.dataset.numberGroup || "既定";
+            }
+        } else if (document.activeElement !== numberGroupInput) {
             numberGroupInput.value = "";
         }
     }
@@ -1455,6 +1489,43 @@ function syncNumberingControls() {
         autoNumberButton.setAttribute("aria-pressed", String(numbered));
         autoNumberButton.textContent = numbered ? "1. 自動番号 ON" : "1. 自動番号";
     }
+}
+
+if (numberGroupInput) {
+    numberGroupInput.addEventListener("focus", function() {
+        numberGroupEditingElement = getSelectedNumberableElement();
+        numberGroupHistoryRecorded = false;
+    });
+
+    numberGroupInput.addEventListener("input", function() {
+        const element = getSelectedNumberableElement();
+        if (!element || element.dataset.autoNumber !== "1") return;
+
+        if (numberGroupEditingElement !== element) {
+            numberGroupEditingElement = element;
+            numberGroupHistoryRecorded = false;
+        }
+
+        changeNumberGroup({ finalize: false });
+    });
+
+    numberGroupInput.addEventListener("blur", function() {
+        const element = numberGroupEditingElement;
+
+        if (
+            element &&
+            element.isConnected &&
+            element.dataset.autoNumber === "1"
+        ) {
+            const group = numberGroupInput.value.trim() || "既定";
+            element.dataset.numberGroup = group;
+            numberGroupInput.value = group;
+            refreshAutoNumbering();
+        }
+
+        numberGroupEditingElement = null;
+        numberGroupHistoryRecorded = false;
+    });
 }
 
 /* =========================
