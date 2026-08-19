@@ -167,7 +167,8 @@ a {
 }
 
 .room-front {
-    height: 360px;
+    height: auto;
+    min-height: 360px;
     padding: 30px 24px;
     background:
         linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 248, 234, 0.96)),
@@ -235,8 +236,8 @@ a {
     margin: 10px 0 14px;
     padding: 0;
 
-    max-height: 64px;
-    overflow: hidden;
+    max-height: none;
+    overflow: visible;
 }
 
 .tag-block {
@@ -260,6 +261,9 @@ a {
     letter-spacing: 0.04em;
 
     box-shadow: 0 3px 8px rgba(65, 45, 25, 0.15);
+
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 
 .tag-block::before {
@@ -437,7 +441,7 @@ a {
     }
 
     .room-front {
-        height: 340px;
+        height: auto;
         min-height: 340px;
         padding: 28px 20px;
     }
@@ -450,7 +454,8 @@ a {
     }
 
     .room-tags {
-        max-height: 58px;
+        max-height: none;
+        overflow: visible;
     }
 
     .room-front h3 {

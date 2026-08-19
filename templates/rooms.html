@@ -150,5 +150,61 @@
                 </section>
             {% endif %}
         </main>
-    </body>
+    
+
+<script>
+(function () {
+    const fronts = [...document.querySelectorAll(".room-front")];
+
+    if (fronts.length === 0) {
+        return;
+    }
+
+    let resizeFrame = null;
+
+    function equalizeRoomFrontHeights() {
+        if (resizeFrame !== null) {
+            cancelAnimationFrame(resizeFrame);
+        }
+
+        resizeFrame = requestAnimationFrame(() => {
+            /*
+             * 詳細(<details>)全体ではなく、閉じている表面だけを揃える。
+             * これにより1枚の詳細を開いても、隣の額縁までは伸びない。
+             */
+            fronts.forEach(front => {
+                front.style.minHeight = "0px";
+            });
+
+            /* 1列表示のスマホでは無理に高さを揃えない */
+            if (window.matchMedia("(max-width: 700px)").matches) {
+                fronts.forEach(front => {
+                    front.style.minHeight = "";
+                });
+                resizeFrame = null;
+                return;
+            }
+
+            const maxHeight = Math.max(
+                ...fronts.map(front => Math.ceil(front.scrollHeight))
+            );
+
+            fronts.forEach(front => {
+                front.style.minHeight = `${maxHeight}px`;
+            });
+
+            resizeFrame = null;
+        });
+    }
+
+    equalizeRoomFrontHeights();
+    window.addEventListener("load", equalizeRoomFrontHeights);
+    window.addEventListener("resize", equalizeRoomFrontHeights);
+
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(equalizeRoomFrontHeights);
+    }
+})();
+</script>
+</body>
 </html>
