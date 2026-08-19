@@ -243,6 +243,9 @@ def inject_sidebar_data():
 
 @app.route("/")
 def index():
+    if "user_id" in session:
+        return redirect(url_for("room_list"))
+
     return render_template("index.html")
 
 @app.route("/register", methods=["POST"])
@@ -1531,6 +1534,27 @@ def search_page():
         work_results=work_results,
         result_count=len(room_results) + len(work_results),
     )
+    
+@app.route("/manifest.webmanifest")
+def pwa_manifest():
+    return send_from_directory(
+        app.static_folder,
+        "manifest.webmanifest",
+        mimetype="application/manifest+json"
+    )
+
+
+@app.route("/sw.js")
+def service_worker():
+    response = send_from_directory(
+        app.static_folder,
+        "sw.js",
+        mimetype="application/javascript"
+    )
+
+    response.headers["Cache-Control"] = "no-cache"
+
+    return response
 
 if __name__ == "__main__":
     init_db()

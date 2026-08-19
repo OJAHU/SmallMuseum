@@ -1,0 +1,25 @@
+<link
+    rel="manifest"
+    href="{{ url_for('pwa_manifest') }}"
+>
+
+<meta
+    name="theme-color"
+    content="#2d201b"
+>
+
+<link
+    rel="apple-touch-icon"
+    href="{{ url_for(
+        'static',
+        filename='icons/icon-192.png'
+    ) }}"
+>
+
+<script
+    src="{{ url_for(
+        'static',
+        filename='pwa.js'
+    ) }}"
+    defer
+></script>
