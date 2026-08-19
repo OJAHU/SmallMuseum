@@ -197,12 +197,86 @@
         });
     }
 
-    equalizeRoomFrontHeights();
-    window.addEventListener("load", equalizeRoomFrontHeights);
-    window.addEventListener("resize", equalizeRoomFrontHeights);
+    function equalizeOpenedDetailHeights() {
+        const cards = [...document.querySelectorAll(".room-card")];
+
+        /* 以前の高さ指定をいったん解除して、自然な高さを測り直す */
+        cards.forEach(card => {
+            const back = card.querySelector(".room-back");
+            if (back) {
+                back.style.minHeight = "";
+            }
+        });
+
+        /* 1列表示では左右差がないため高さ調整しない */
+        if (window.matchMedia("(max-width: 700px)").matches) {
+            return;
+        }
+
+        /*
+         * 同じ段にあるカードをまとめる。
+         * CSS Gridでは同じ段のカードはtop座標がほぼ一致するため、
+         * 1px程度の誤差を丸めて同一行として扱う。
+         */
+        const rows = new Map();
+
+        cards.forEach(card => {
+            const top = Math.round(card.getBoundingClientRect().top);
+            if (!rows.has(top)) {
+                rows.set(top, []);
+            }
+            rows.get(top).push(card);
+        });
+
+        rows.forEach(rowCards => {
+            /* 1枚しかない最終行は揃える相手がいない */
+            if (rowCards.length < 2) {
+                return;
+            }
+
+            const details = rowCards.map(card => card.querySelector(".room-details"));
+
+            /*
+             * 同じ段のカードがすべて開いているときだけ詳細部分を揃える。
+             * 片方だけ開いた場合は、閉じたカードを無駄に伸ばさない。
+             */
+            if (details.some(detail => !detail || !detail.open)) {
+                return;
+            }
+
+            const backs = rowCards
+                .map(card => card.querySelector(".room-back"))
+                .filter(Boolean);
+
+            const maxHeight = Math.max(
+                ...backs.map(back => Math.ceil(back.scrollHeight))
+            );
+
+            backs.forEach(back => {
+                back.style.minHeight = `${maxHeight}px`;
+            });
+        });
+    }
+
+    function refreshRoomCardHeights() {
+        equalizeRoomFrontHeights();
+
+        /* 表面の高さ調整が反映された後に、詳細部分の高さを測る */
+        requestAnimationFrame(equalizeOpenedDetailHeights);
+    }
+
+    refreshRoomCardHeights();
+    window.addEventListener("load", refreshRoomCardHeights);
+    window.addEventListener("resize", refreshRoomCardHeights);
+
+    document.querySelectorAll(".room-details").forEach(detail => {
+        detail.addEventListener("toggle", () => {
+            requestAnimationFrame(equalizeOpenedDetailHeights);
+        });
+    });
 
     if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(equalizeRoomFrontHeights);
+        document.fonts.ready.then(refreshRoomCardHeights);
     }
 })();
 </script>
